@@ -12,18 +12,20 @@ from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
+from fastforge import __version__
+
 console = Console()
 
 TEMPLATE_DIR = str(Path(__file__).parent / "template")
 INFRA_TEMPLATE_DIR = str(Path(__file__).parent / "infra_template")
 
-BANNER = """
+BANNER = f"""
 [bold blue]  ___         _   ___[/]
 [bold blue] | __| _ _ __| |_| __|__ _ _ __ _ ___[/]
 [bold cyan] | _/ _` (_-<  _| _/ _ \\ '_/ _` / -_)[/]
 [bold cyan] |_|\\__,_/__/\\__|_|\\___/_| \\__, \\___|[/]
 [bold cyan]                            |___/[/]
-[bold white] Production-grade FastAPI Generator[/]  [dim]v1.0.0[/]
+[bold white] Production-grade FastAPI Generator[/]  [dim]v{__version__}[/]
 """
 
 STYLE_SECTION = "bold bright_cyan"
