@@ -636,7 +636,7 @@ def _stub_command(name: str, description: str) -> None:
     console.print(
         Panel(
             f"This will interactively generate {description.lower()} for your project.\n\n"
-            "[dim]Track progress: https://github.com/VibhuviOiO/fastforge[/]",
+            "[dim]Track progress: https://github.com/VibhuviOiO/fastforge-cli[/]",
             title=f"[bold bright_cyan]fastforge {name}[/]",
             border_style="yellow",
             padding=(1, 2),

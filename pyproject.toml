@@ -1,5 +1,5 @@
 [project]
-name = "fastforge"
+name = "fastforge-cli"
 version = "0.0.1"
 description = "Production-grade FastAPI project generator for Python backends"
 requires-python = ">=3.10"
@@ -29,10 +29,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/VibhuviOiO/fastforge"
-Repository = "https://github.com/VibhuviOiO/fastforge"
-Issues = "https://github.com/VibhuviOiO/fastforge/issues"
-Documentation = "https://github.com/VibhuviOiO/fastforge#readme"
+Homepage = "https://github.com/VibhuviOiO/fastforge-cli"
+Repository = "https://github.com/VibhuviOiO/fastforge-cli"
+Issues = "https://github.com/VibhuviOiO/fastforge-cli/issues"
+Documentation = "https://github.com/VibhuviOiO/fastforge-cli#readme"
 
 [project.scripts]
 fastforge = "fastforge.cli:main"

@@ -2,8 +2,8 @@
 
 **Production-grade FastAPI project generator for Python backends.**
 
-[![PyPI](https://img.shields.io/pypi/v/fastforge)](https://pypi.org/project/fastforge/)
-[![Python](https://img.shields.io/pypi/pyversions/fastforge)](https://pypi.org/project/fastforge/)
+[![PyPI](https://img.shields.io/pypi/v/fastforge-cli)](https://pypi.org/project/fastforge-cli/)
+[![Python](https://img.shields.io/pypi/pyversions/fastforge-cli)](https://pypi.org/project/fastforge-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 FastForge generates a **ready-to-run, production-grade FastAPI project** with SOLID architecture, structured logging, Docker containerization, and async CRUD — all in under 30 seconds.
@@ -11,7 +11,7 @@ FastForge generates a **ready-to-run, production-grade FastAPI project** with SO
 ## Quick Start
 
 ```bash
-pip install fastforge
+pip install fastforge-cli
 fastforge
 ```
 
