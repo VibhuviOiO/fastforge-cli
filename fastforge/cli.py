@@ -39,7 +39,7 @@ CUSTOM_STYLE = questionary.Style(
         ("pointer", "fg:cyan bold"),
         ("highlighted", "fg:cyan bold"),
         ("selected", "fg:green"),
-        ("answer", "fg:bright_green bold"),
+        ("answer", "fg:ansibrightgreen bold"),
     ]
 )
 
