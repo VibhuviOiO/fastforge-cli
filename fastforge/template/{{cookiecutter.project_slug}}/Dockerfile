@@ -15,8 +15,8 @@ COPY app/ app/
 RUN mkdir -p /var/log/app
 {%- endif %}
 
-RUN adduser --disabled-password --gecos "" appuser \
-{%- if cookiecutter.log_connector == "file" %}
+RUN adduser --disabled-password --gecos "" appuser
+{%- if cookiecutter.log_connector == "file" %} \
     && chown -R appuser:appuser /var/log/app
 {%- endif %}
 

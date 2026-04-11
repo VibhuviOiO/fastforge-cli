@@ -1,0 +1,94 @@
+# Vector Agent — collects structured JSON logs and forwards to {{ cookiecutter.log_target }}
+#
+# If your environment already has a Vector daemon/DaemonSet,
+# you only need to add the [sources.app_logs] path to your existing config.
+
+[sources.app_logs]
+type = "file"
+include = ["/var/log/app/*.log"]
+read_from = "beginning"
+fingerprint.strategy = "device_and_inode"
+
+[transforms.parse_json]
+type = "remap"
+inputs = ["app_logs"]
+source = '''
+parsed, err = parse_json(.message)
+if err == null {
+  . = merge(., parsed)
+  del(.message)
+} else {
+  .raw_message = .message
+  del(.message)
+}
+.service = "{{ cookiecutter.project_slug }}"
+.pipeline = "vector-agent"
+'''
+{% if cookiecutter.log_target == "kafka" %}
+[sinks.kafka]
+type = "kafka"
+inputs = ["parse_json"]
+bootstrap_servers = "${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}"
+topic = "{{ cookiecutter.project_slug }}-logs"
+encoding.codec = "json"
+
+[sinks.kafka.buffer]
+type = "disk"
+max_size = 268435456
+when_full = "block"
+{% elif cookiecutter.log_target == "elasticsearch" %}
+[sinks.elasticsearch]
+type = "elasticsearch"
+inputs = ["parse_json"]
+endpoints = ["${ELASTICSEARCH_URL:-http://elasticsearch:9200}"]
+bulk.index = "{{ cookiecutter.project_slug }}-logs-%Y.%m.%d"
+encoding.codec = "json"
+
+[sinks.elasticsearch.buffer]
+type = "disk"
+max_size = 268435456
+when_full = "block"
+{% elif cookiecutter.log_target == "opensearch" %}
+[sinks.opensearch]
+type = "elasticsearch"
+inputs = ["parse_json"]
+endpoints = ["${OPENSEARCH_URL:-http://opensearch:9200}"]
+api_version = "v7"
+bulk.index = "{{ cookiecutter.project_slug }}-logs-%Y.%m.%d"
+encoding.codec = "json"
+
+[sinks.opensearch.buffer]
+type = "disk"
+max_size = 268435456
+when_full = "block"
+{% elif cookiecutter.log_target == "loki" %}
+[sinks.loki]
+type = "loki"
+inputs = ["parse_json"]
+endpoint = "${LOKI_URL:-http://loki:3100}"
+encoding.codec = "json"
+labels.service = "{{ cookiecutter.project_slug }}"
+labels.env = "staging"
+
+[sinks.loki.buffer]
+type = "disk"
+max_size = 268435456
+when_full = "block"
+{% elif cookiecutter.log_target == "http" %}
+[sinks.http]
+type = "http"
+inputs = ["parse_json"]
+uri = "${LOG_HTTP_ENDPOINT}"
+method = "post"
+encoding.codec = "json"
+
+[sinks.http.buffer]
+type = "disk"
+max_size = 268435456
+when_full = "block"
+{% endif %}
+# ── Dev: also print to stdout (remove in production) ─────────────────────────
+[sinks.console]
+type = "console"
+inputs = ["parse_json"]
+encoding.codec = "json"

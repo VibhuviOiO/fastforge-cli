@@ -19,6 +19,13 @@ if "{{ cookiecutter.logging }}" == "none":
     remove_path("app/logging_config.py")
     remove_path("app/middleware/logging_middleware.py")
 
+# ── Log Agent ────────────────────────────────────────────────────────────────
+log_agent = "{{ cookiecutter.log_agent }}"
+if log_agent != "vector":
+    remove_path("docker/vector")
+if log_agent != "fluentbit":
+    remove_path("docker/fluentbit")
+
 # ── Database ─────────────────────────────────────────────────────────────────
 database = "{{ cookiecutter.database }}"
 if database == "none":
@@ -53,7 +60,7 @@ if quality_gate != "codeclimate":
 if "{{ cookiecutter.docker }}" != "yes":
     remove_path("Dockerfile")
     remove_path(".dockerignore")
-    remove_path("docker-compose.yml")
+    remove_path("docker")
     remove_path("docker-compose.debug.yml")
 elif "{{ cookiecutter.docker_debug }}" != "yes":
     remove_path("docker-compose.debug.yml")

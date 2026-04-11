@@ -1,4 +1,8 @@
-# Debug mode — attach VS Code debugger to port 5678
+# Development mode — auto-reload on code changes, no venv needed.
+# Run from project root: docker compose -f docker-compose.debug.yml up --build
+#
+# Debugger: App starts immediately. Attach VS Code debugger to port 5678 anytime.
+#           To wait for debugger before starting, change --wait-for-attach below.
 services:
   app:
     build:
@@ -7,9 +11,9 @@ services:
     container_name: {{cookiecutter.project_slug}}-debug
     env_file:
       - .env.staging
-    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn app.main:app --host 0.0.0.0 --port {{cookiecutter.port}} --reload"]
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --listen 0.0.0.0:5678 -m uvicorn app.main:app --host 0.0.0.0 --port {{cookiecutter.port}} --reload"]
     ports:
       - "{{cookiecutter.port}}:{{cookiecutter.port}}"
       - "5678:5678"
     volumes:
-      - ./app:/app/app:ro
+      - ./app:/app/app

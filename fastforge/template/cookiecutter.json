@@ -20,6 +20,8 @@
   "logging": ["structlog", "none"],
   "log_format": ["json", "console"],
   "log_connector": ["stdout", "file"],
+  "log_agent": ["none", "vector", "fluentbit"],
+  "log_target": ["none", "elasticsearch", "opensearch", "kafka", "loki", "http"],
 
   "quality_gate": ["none", "sonarqube", "sonarcloud", "qodana", "codeclimate"],
 

@@ -20,12 +20,10 @@ TEMPLATE_DIR = str(Path(__file__).parent / "template")
 INFRA_TEMPLATE_DIR = str(Path(__file__).parent / "infra_template")
 
 BANNER = f"""
-[bold blue]  ___         _   ___[/]
-[bold blue] | __| _ _ __| |_| __|__ _ _ __ _ ___[/]
-[bold cyan] | _/ _` (_-<  _| _/ _ \\ '_/ _` / -_)[/]
-[bold cyan] |_|\\__,_/__/\\__|_|\\___/_| \\__, \\___|[/]
-[bold cyan]                            |___/[/]
-[bold white] Production-grade FastAPI Generator[/]  [dim]v{__version__}[/]
+[bold bright_blue]  ╔═╗╔═╗╔═╗╔╦╗  ╔═╗╔═╗╦═╗╔═╗╔═╗[/]
+[bold bright_cyan]  ╠╣ ╠═╣╚═╗ ║   ╠╣ ║ ║╠╦╝║ ╦║╣ [/]
+[bold cyan]  ╚  ╩ ╩╚═╝ ╩   ╚  ╚═╝╩╚═╚═╝╚═╝[/]
+[bold white]  Production-grade FastAPI Generator[/]  [dim italic]v{__version__}[/]
 """
 
 STYLE_SECTION = "bold bright_cyan"
@@ -115,21 +113,30 @@ def ask_model() -> dict:
 def ask_logging_basic() -> dict:
     """Logging — basic mode (always structlog + json)."""
     _section("📋  Logging")
+    console.print(f"  [{STYLE_HINT}]Stdout → logs visible via 'docker logs' (K8s/cloud-native)[/]")
+    console.print(f"  [{STYLE_HINT}]Stdout + File → enables Vector/Fluent Bit to collect & forward logs[/]")
     log_output = questionary.select(
         "Log output:",
         choices=[
-            questionary.Choice("Stdout (containers / cloud-native)", value="stdout"),
-            questionary.Choice("Stdout + File (for log agent collection)", value="file"),
+            questionary.Choice("Stdout only — logs print to container output", value="stdout"),
+            questionary.Choice("Stdout + File — write to /var/log/app/ for log agent forwarding", value="file"),
         ],
         default="stdout",
         style=CUSTOM_STYLE,
     ).ask()
 
-    return {
+    result = {
         "logging": "structlog",
         "log_format": "json",
         "log_connector": log_output,
+        "log_agent": "none",
+        "log_target": "none",
     }
+
+    if log_output == "file":
+        result.update(_ask_log_agent())
+
+    return result
 
 
 def ask_docker_basic() -> dict:
@@ -142,6 +149,42 @@ def ask_docker_basic() -> dict:
     ).ask()
 
     return {"docker": "yes", "docker_debug": "yes" if debug else "no"}
+
+
+# ── Log agent helper ─────────────────────────────────────────────────────────
+
+def _ask_log_agent() -> dict:
+    """Ask which log collection agent to include as a sidecar."""
+    console.print(f"  [{STYLE_HINT}]A log agent runs as a sidecar in docker-compose, reads log files,[/]")
+    console.print(f"  [{STYLE_HINT}]and forwards them to your chosen target (Elasticsearch, Kafka, etc.)[/]")
+    agent = questionary.select(
+        "Log collection agent (sidecar in docker-compose):",
+        choices=[
+            questionary.Choice("None — I'll collect logs myself or use an existing daemon", value="none"),
+            questionary.Choice("Vector — Rust, lightweight, recommended", value="vector"),
+            questionary.Choice("Fluent Bit — C, CNCF graduated, widely adopted", value="fluentbit"),
+        ],
+        default="vector",
+        style=CUSTOM_STYLE,
+    ).ask()
+
+    if agent == "none":
+        return {"log_agent": agent, "log_target": "none"}
+
+    console.print(f"  [{STYLE_HINT}]Where should {agent} send the collected logs?[/]")
+    target = questionary.select(
+        "Log target:",
+        choices=[
+            questionary.Choice("Elasticsearch — full-text search & analytics (ELK stack)", value="elasticsearch"),
+            questionary.Choice("OpenSearch — AWS-managed alternative to Elasticsearch", value="opensearch"),
+            questionary.Choice("Kafka — stream to a topic for downstream consumers", value="kafka"),
+            questionary.Choice("Loki — Grafana's lightweight log aggregation", value="loki"),
+            questionary.Choice("HTTP endpoint — generic HTTP log ingestion API", value="http"),
+        ],
+        style=CUSTOM_STYLE,
+    ).ask()
+
+    return {"log_agent": agent, "log_target": target}
 
 
 # ── Advanced-only questions ──────────────────────────────────────────────────
@@ -226,7 +269,7 @@ def ask_logging_advanced() -> dict:
     _section("📋  Logging")
     enabled = questionary.confirm("Enable structured logging (structlog)?", default=True, style=CUSTOM_STYLE).ask()
     if not enabled:
-        return {"logging": "none", "log_format": "console", "log_connector": "stdout"}
+        return {"logging": "none", "log_format": "console", "log_connector": "stdout", "log_agent": "none", "log_target": "none"}
 
     log_format = questionary.select(
         "Log format:",
@@ -235,17 +278,24 @@ def ask_logging_advanced() -> dict:
         style=CUSTOM_STYLE,
     ).ask()
 
+    console.print(f"  [{STYLE_HINT}]Stdout → logs visible via 'docker logs' (K8s/cloud-native)[/]")
+    console.print(f"  [{STYLE_HINT}]Stdout + File → enables Vector/Fluent Bit to collect & forward logs[/]")
     log_connector = questionary.select(
         "Log output:",
         choices=[
-            questionary.Choice("Stdout (containers)", value="stdout"),
-            questionary.Choice("Stdout + File (for log agent collection)", value="file"),
+            questionary.Choice("Stdout only — logs print to container output", value="stdout"),
+            questionary.Choice("Stdout + File — write to /var/log/app/ for log agent forwarding", value="file"),
         ],
         default="stdout",
         style=CUSTOM_STYLE,
     ).ask()
 
-    return {"logging": "structlog", "log_format": log_format, "log_connector": log_connector}
+    result = {"logging": "structlog", "log_format": log_format, "log_connector": log_connector, "log_agent": "none", "log_target": "none"}
+
+    if log_connector == "file":
+        result.update(_ask_log_agent())
+
+    return result
 
 
 def ask_quality_gate() -> dict:
@@ -316,7 +366,11 @@ def show_summary(ctx: dict, mode: str) -> None:
 
     log_val = ctx["logging"]
     if log_val != "none":
-        table.add_row("Logging", f"structlog [dim]({ctx['log_format']} → {ctx['log_connector']})[/]")
+        agent_tag = ""
+        if ctx.get("log_agent", "none") != "none":
+            target = ctx.get('log_target', 'none')
+            agent_tag = f" + {ctx['log_agent']} → {target}"
+        table.add_row("Logging", f"structlog [dim]({ctx['log_format']} → {ctx['log_connector']}{agent_tag})[/]")
     else:
         table.add_row("Logging", "[dim]disabled[/]")
 
@@ -368,7 +422,9 @@ def generate(ctx: dict) -> None:
     # Build next-steps
     steps = [f"  [bold]cd {ctx['project_slug']}[/]"]
     if ctx["docker"] == "yes":
-        steps.append("  [green]docker compose up --build[/]")
+        if ctx.get("docker_debug") == "yes":
+            steps.append("  [green]docker compose -f docker-compose.debug.yml up --build[/]  [dim]# debug + auto-reload, no venv needed[/]")
+        steps.append("  [green]docker compose -f docker/docker-compose.yml up --build[/]  [dim]# production stack[/]")
     else:
         steps.append('  [green]pip install -e ".[dev]"[/]')
         steps.append("  [green]uvicorn app.main:app --reload[/]")
@@ -460,13 +516,11 @@ def main():
 # fastforge infra  (infrastructure stack)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-INFRA_BANNER = """
-[bold blue]  ___         _   ___[/]
-[bold blue] | __| _ _ __| |_| __|__ _ _ __ _ ___[/]
-[bold cyan] | _/ _` (_-<  _| _/ _ \\ '_/ _` / -_)[/]
-[bold cyan] |_|\\__,_/__/\\__|_|\\___/_| \\__, \\___|[/]
-[bold cyan]                            |___/[/]
-[bold white] Infrastructure Stack Generator[/]
+INFRA_BANNER = f"""
+[bold bright_blue]  ╔═╗╔═╗╔═╗╔╦╗  ╔═╗╔═╗╦═╗╔═╗╔═╗[/]
+[bold bright_cyan]  ╠╣ ╠═╣╚═╗ ║   ╠╣ ║ ║╠╦╝║ ╦║╣ [/]
+[bold cyan]  ╚  ╩ ╩╚═╝ ╩   ╚  ╚═╝╩╚═╚═╝╚═╝[/]
+[bold white]  Infrastructure Stack Generator[/]  [dim italic]v{__version__}[/]
 """
 
 
