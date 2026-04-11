@@ -1,0 +1,141 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: {{ cookiecutter.project_slug }}-dev
+    env_file:
+      - .env.staging
+    ports:
+      - "{{ cookiecutter.port }}:{{ cookiecutter.port }}"
+    volumes:
+      - ./app:/app/app:ro
+{%- if cookiecutter.log_connector == "file" %}
+      - app-logs:/var/log/app
+{%- endif %}
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "{{ cookiecutter.port }}", "--reload", "--log-level", "debug"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ cookiecutter.port }}/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+{%- if cookiecutter.database == "postgres" %}
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: {{ cookiecutter.project_slug }}-db
+    environment:
+      POSTGRES_DB: {{ cookiecutter.package_name }}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+{%- endif %}
+{%- if cookiecutter.database == "mysql" %}
+
+  mysql:
+    image: mysql:8
+    container_name: {{ cookiecutter.project_slug }}-db
+    environment:
+      MYSQL_DATABASE: {{ cookiecutter.package_name }}
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+{%- endif %}
+{%- if cookiecutter.database == "mongodb" %}
+
+  mongodb:
+    image: mongo:7
+    container_name: {{ cookiecutter.project_slug }}-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+{%- endif %}
+{%- if cookiecutter.cache == "redis" or cookiecutter.streaming == "redis_pubsub" %}
+
+  redis:
+    image: redis:7-alpine
+    container_name: {{ cookiecutter.project_slug }}-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+{%- endif %}
+{%- if cookiecutter.cache == "memcached" %}
+
+  memcached:
+    image: memcached:1.6-alpine
+    container_name: {{ cookiecutter.project_slug }}-memcached
+    ports:
+      - "11211:11211"
+{%- endif %}
+{%- if cookiecutter.streaming == "kafka" %}
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    container_name: {{ cookiecutter.project_slug }}-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      CLUSTER_ID: fastforge-kafka-cluster-001
+    ports:
+      - "9092:9092"
+{%- endif %}
+{%- if cookiecutter.streaming == "rabbitmq" %}
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: {{ cookiecutter.project_slug }}-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+{%- endif %}
+{%- if cookiecutter.streaming == "nats" %}
+
+  nats:
+    image: nats:2-alpine
+    container_name: {{ cookiecutter.project_slug }}-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--http_port", "8222"]
+{%- endif %}
+
+{% set ns = namespace(has_volumes=false) %}
+{%- if cookiecutter.log_connector == "file" %}{% set ns.has_volumes = true %}{% endif %}
+{%- if cookiecutter.database == "postgres" %}{% set ns.has_volumes = true %}{% endif %}
+{%- if cookiecutter.database == "mysql" %}{% set ns.has_volumes = true %}{% endif %}
+{%- if cookiecutter.database == "mongodb" %}{% set ns.has_volumes = true %}{% endif %}
+{%- if cookiecutter.cache == "redis" or cookiecutter.streaming == "redis_pubsub" %}{% set ns.has_volumes = true %}{% endif %}
+{%- if ns.has_volumes %}
+volumes:
+{%- if cookiecutter.log_connector == "file" %}
+  app-logs:
+{%- endif %}
+{%- if cookiecutter.database == "postgres" %}
+  pgdata:
+{%- endif %}
+{%- if cookiecutter.database == "mysql" %}
+  mysqldata:
+{%- endif %}
+{%- if cookiecutter.database == "mongodb" %}
+  mongodata:
+{%- endif %}
+{%- if cookiecutter.cache == "redis" or cookiecutter.streaming == "redis_pubsub" %}
+  redisdata:
+{%- endif %}
+{%- endif %}

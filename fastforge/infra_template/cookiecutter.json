@@ -1,0 +1,11 @@
+{
+  "project_slug": "my-fastapi-service",
+
+  "log_agent": ["none", "vector", "fluentbit"],
+  "log_aggregator": ["none", "vector", "logstash"],
+  "streaming": ["none", "enabled"],
+  "secrets": ["none", "vault"],
+  "database": ["none", "postgres", "mongodb"],
+
+  "_copy_without_render": []
+}

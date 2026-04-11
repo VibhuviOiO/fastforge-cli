@@ -1,0 +1,15 @@
+# Debug mode — attach VS Code debugger to port 5678
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: {{cookiecutter.project_slug}}-debug
+    env_file:
+      - .env.staging
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn app.main:app --host 0.0.0.0 --port {{cookiecutter.port}} --reload"]
+    ports:
+      - "{{cookiecutter.port}}:{{cookiecutter.port}}"
+      - "5678:5678"
+    volumes:
+      - ./app:/app/app:ro

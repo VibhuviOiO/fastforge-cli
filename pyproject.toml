@@ -1,0 +1,58 @@
+[project]
+name = "fastforge"
+version = "0.0.1"
+description = "Production-grade FastAPI project generator for Python backends"
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Jinna Balu", email = "jinnabaalu@gmail.com"},
+]
+keywords = ["fastapi", "cookiecutter", "production", "generator", "scaffold", "async", "docker"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "cookiecutter>=2.6.0",
+    "questionary>=2.0.0",
+    "rich>=13.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/VibhuviOiO/fastforge"
+Repository = "https://github.com/VibhuviOiO/fastforge"
+Issues = "https://github.com/VibhuviOiO/fastforge/issues"
+Documentation = "https://github.com/VibhuviOiO/fastforge#readme"
+
+[project.scripts]
+fastforge = "fastforge.cli:main"
+fastforge-infra = "fastforge.cli:infra_main"
+fastforge-cicd = "fastforge.cli:cicd_main"
+fastforge-secops = "fastforge.cli:secops_main"
+fastforge-helm = "fastforge.cli:helm_main"
+fastforge-k8s = "fastforge.cli:k8s_main"
+fastforge-swarm = "fastforge.cli:swarm_main"
+fastforge-marathon = "fastforge.cli:marathon_main"
+fastforge-observability = "fastforge.cli:observability_main"
+fastforge-docs = "fastforge.cli:docs_main"
+fastforge-model = "fastforge.cli:model_main"
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["fastforge*"]
+
+[tool.setuptools.package-data]
+fastforge = ["template/**/*", "template/**/.*", "infra_template/**/*", "infra_template/**/.*"]

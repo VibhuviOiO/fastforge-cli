@@ -1,0 +1,36 @@
+# Vector Agent — collects logs from file → forwards to Kafka
+
+[sources.app_logs]
+type = "file"
+include = ["/var/log/app/*.log"]
+read_from = "beginning"
+fingerprint.strategy = "device_and_inode"
+
+[transforms.parse_json]
+type = "remap"
+inputs = ["app_logs"]
+source = '''
+parsed, err = parse_json(.message)
+if err == null {
+  . = merge(., parsed)
+  del(.message)
+} else {
+  .raw_message = .message
+  del(.message)
+}
+.source = "vector-agent"
+.pipeline = "file-to-kafka"
+.log_file = .file
+'''
+
+[sinks.kafka]
+type = "kafka"
+inputs = ["parse_json"]
+bootstrap_servers = "kafka:9092"
+topic = "app-logs"
+encoding.codec = "json"
+
+[sinks.kafka.buffer]
+type = "disk"
+max_size = 268435456
+when_full = "block"

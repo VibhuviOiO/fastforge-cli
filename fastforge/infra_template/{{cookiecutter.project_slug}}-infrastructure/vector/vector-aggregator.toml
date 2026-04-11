@@ -1,0 +1,29 @@
+# Vector Aggregator — consumes from Kafka → sinks to Elasticsearch
+
+[sources.kafka]
+type = "kafka"
+bootstrap_servers = "kafka:9092"
+group_id = "vector-aggregator"
+topics = ["app-logs"]
+decoding.codec = "json"
+
+[transforms.enrich]
+type = "remap"
+inputs = ["kafka"]
+source = '''
+.environment = get_env_var("APP_ENV") ?? "unknown"
+.service = "{{ cookiecutter.project_slug }}"
+.indexed_at = now()
+'''
+
+[sinks.elasticsearch]
+type = "elasticsearch"
+inputs = ["enrich"]
+endpoints = ["http://elasticsearch:9200"]
+bulk.index = "{{ cookiecutter.project_slug }}-logs-%Y-%m-%d"
+encoding.except_fields = ["source_type"]
+
+[sinks.elasticsearch.buffer]
+type = "disk"
+max_size = 268435456
+when_full = "block"

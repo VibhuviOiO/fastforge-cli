@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: {{ cookiecutter.project_slug }}-app
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+    volumes:
+{%- if cookiecutter.log_agent != "none" %}
+      - app-logs:/var/log/app
+{%- endif %}
+      - ../app:/code/app:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+{%- if cookiecutter.log_agent != "none" %}
+
+volumes:
+  app-logs:
+    name: {{ cookiecutter.project_slug }}-app-logs
+{%- endif %}

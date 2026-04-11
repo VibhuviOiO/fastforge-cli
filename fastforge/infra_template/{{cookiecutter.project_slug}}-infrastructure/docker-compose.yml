@@ -1,0 +1,31 @@
+# Infrastructure Stack — {{ cookiecutter.project_slug }}
+# Usage:
+#   docker compose -f infrastructure/docker-compose.yml up -d
+
+include:
+  - docker-compose.app.yml
+{%- if cookiecutter.log_agent == "vector" %}
+  - docker-compose.vector-agent.yml
+{%- elif cookiecutter.log_agent == "fluentbit" %}
+  - docker-compose.fluentbit.yml
+{%- endif %}
+{%- if cookiecutter.log_aggregator == "vector" %}
+  - docker-compose.vector-aggregator.yml
+{%- elif cookiecutter.log_aggregator == "logstash" %}
+  - docker-compose.logstash.yml
+{%- endif %}
+{%- if cookiecutter.log_agent != "none" or cookiecutter.log_aggregator != "none" %}
+  - docker-compose.elasticsearch.yml
+{%- endif %}
+{%- if cookiecutter.streaming != "none" or cookiecutter.log_agent != "none" %}
+  - docker-compose.kafka.yml
+{%- endif %}
+{%- if cookiecutter.database == "postgres" %}
+  - docker-compose.postgres.yml
+{%- endif %}
+{%- if cookiecutter.database == "mongodb" %}
+  - docker-compose.mongodb.yml
+{%- endif %}
+{%- if cookiecutter.secrets == "vault" %}
+  - docker-compose.vault.yml
+{%- endif %}

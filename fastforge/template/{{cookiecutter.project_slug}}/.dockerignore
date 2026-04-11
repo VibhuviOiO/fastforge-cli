@@ -1,0 +1,15 @@
+**/__pycache__
+**/.git
+**/.gitignore
+**/.env
+**/.env.*
+**/.vscode
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+**/docker-compose*
+**/Dockerfile*
+**/*.md
+**/tests
+**/.ruff_cache
+**/.pre-commit-config.yaml

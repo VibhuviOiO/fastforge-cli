@@ -1,0 +1,100 @@
+[project]
+name = "{{ cookiecutter.project_slug }}"
+version = "0.1.0"
+description = "{{ cookiecutter.description }}"
+requires-python = ">={{ cookiecutter.python_version }}"
+authors = [
+    {name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.author_email }}"},
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "httpx>=0.28.0",
+{%- if cookiecutter.logging == "structlog" %}
+    "structlog>=24.4.0",
+    "python-json-logger>=3.2.0",
+{%- endif %}
+{%- if cookiecutter.database == "postgres" %}
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+{%- endif %}
+{%- if cookiecutter.database == "mysql" %}
+    "sqlalchemy[asyncio]>=2.0.0",
+    "aiomysql>=0.2.0",
+    "alembic>=1.14.0",
+{%- endif %}
+{%- if cookiecutter.database == "sqlite" %}
+    "sqlalchemy[asyncio]>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "alembic>=1.14.0",
+{%- endif %}
+{%- if cookiecutter.database == "mongodb" %}
+    "motor>=3.6.0",
+{%- endif %}
+{%- if cookiecutter.cache == "redis" or cookiecutter.streaming == "redis_pubsub" %}
+    "redis[hiredis]>=5.0.0",
+{%- endif %}
+{%- if cookiecutter.cache == "memcached" %}
+    "aiomcache>=0.8.0",
+{%- endif %}
+{%- if cookiecutter.cache == "in_memory" %}
+    "cachetools>=5.5.0",
+{%- endif %}
+{%- if cookiecutter.streaming == "kafka" %}
+    "aiokafka>=0.12.0",
+{%- endif %}
+{%- if cookiecutter.streaming == "rabbitmq" %}
+    "aio-pika>=9.4.0",
+{%- endif %}
+{%- if cookiecutter.streaming == "nats" %}
+    "nats-py>=2.9.0",
+{%- endif %}
+{%- if cookiecutter.secrets == "vault" %}
+    "hvac>=2.3.0",
+{%- endif %}
+{%- if cookiecutter.secrets == "aws_sm" %}
+    "boto3>=1.35.0",
+{%- endif %}
+{%- if cookiecutter.secrets == "azure_kv" %}
+    "azure-keyvault-secrets>=4.8.0",
+    "azure-identity>=1.17.0",
+{%- endif %}
+{%- if cookiecutter.secrets == "gcp_sm" %}
+    "google-cloud-secret-manager>=2.20.0",
+{%- endif %}
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.28.0",
+    "ruff>=0.8.0",
+{%- if cookiecutter.precommit == "yes" %}
+    "pre-commit>=4.0.0",
+{%- endif %}
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short --cov=app --cov-report=term-missing"
+
+[tool.ruff]
+target-version = "py{{ cookiecutter.python_version.replace('.', '') }}"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "S", "B", "A", "C4", "T20"]
+ignore = ["COM812", "S104"]

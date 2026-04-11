@@ -1,0 +1,34 @@
+{
+  "project_name": "my-fastapi-service",
+  "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+  "package_name": "{{ cookiecutter.project_slug.replace('-', '_') }}",
+  "description": "A production-grade FastAPI service",
+  "author_name": "Your Name",
+  "author_email": "you@example.com",
+  "python_version": "3.11",
+  "port": "8000",
+
+  "model_name": "item",
+  "model_name_class": "Item",
+  "model_name_plural": "items",
+
+  "database": ["none", "postgres", "mysql", "sqlite", "mongodb"],
+  "cache": ["none", "redis", "memcached", "in_memory"],
+  "streaming": ["none", "kafka", "rabbitmq", "redis_pubsub", "nats"],
+  "secrets": ["none", "vault", "aws_sm", "azure_kv", "gcp_sm"],
+
+  "logging": ["structlog", "none"],
+  "log_format": ["json", "console"],
+  "log_connector": ["stdout", "file"],
+
+  "quality_gate": ["none", "sonarqube", "sonarcloud", "qodana", "codeclimate"],
+
+  "docker": ["yes", "no"],
+  "docker_debug": ["yes", "no"],
+
+  "precommit": ["yes", "no"],
+
+  "_copy_without_render": [
+    "*.html"
+  ]
+}

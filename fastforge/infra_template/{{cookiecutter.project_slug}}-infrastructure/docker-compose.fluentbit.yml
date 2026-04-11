@@ -1,0 +1,14 @@
+services:
+  fluentbit:
+    image: fluent/fluent-bit:3.1
+    container_name: {{ cookiecutter.project_slug }}-fluentbit
+    volumes:
+      - ./fluentbit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - app-logs:/var/log/app:ro
+    depends_on:
+      - kafka
+
+volumes:
+  app-logs:
+    name: {{ cookiecutter.project_slug }}-app-logs

@@ -1,0 +1,19 @@
+services:
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: {{ cookiecutter.project_slug }}-vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: dev-only-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./vault/config.hcl:/vault/config/config.hcl:ro
+      - ./vault/policies:/vault/policies:ro
+    healthcheck:
+      test: ["CMD-SHELL", "vault status || true"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

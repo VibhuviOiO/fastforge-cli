@@ -1,0 +1,22 @@
+version: "1.0"
+
+linter: jetbrains/qodana-python:latest
+
+profile:
+  name: qodana.recommended
+
+include:
+  - name: All
+    paths:
+      - app
+
+exclude:
+  - name: All
+    paths:
+      - tests
+      - .venv
+      - __pycache__
+
+projectJDK: "{{ cookiecutter.python_version }}"
+
+failThreshold: 10
