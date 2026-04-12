@@ -22,9 +22,9 @@ if "{{ cookiecutter.logging }}" == "none":
 # ── Log Agent ────────────────────────────────────────────────────────────────
 log_agent = "{{ cookiecutter.log_agent }}"
 if log_agent != "vector":
-    remove_path("docker/vector")
+    remove_path("infra/vector")
 if log_agent != "fluentbit":
-    remove_path("docker/fluentbit")
+    remove_path("infra/fluentbit")
 
 # ── Database ─────────────────────────────────────────────────────────────────
 database = "{{ cookiecutter.database }}"
@@ -60,7 +60,7 @@ if quality_gate != "codeclimate":
 if "{{ cookiecutter.docker }}" != "yes":
     remove_path("Dockerfile")
     remove_path(".dockerignore")
-    remove_path("docker")
+    remove_path("infra")
     remove_path("docker-compose.debug.yml")
 elif "{{ cookiecutter.docker_debug }}" != "yes":
     remove_path("docker-compose.debug.yml")
@@ -68,9 +68,19 @@ elif "{{ cookiecutter.docker_debug }}" != "yes":
 # ── Pre-commit ───────────────────────────────────────────────────────────────
 if "{{ cookiecutter.precommit }}" != "yes":
     remove_path(".pre-commit-config.yaml")
+    remove_path(".secrets.baseline")
 
 # ── Init git repo ────────────────────────────────────────────────────────────
 os.system("git init -q")
+
+# Auto-format generated code with ruff (handles import ordering + style)
+os.system("ruff check --fix --silent . 2>/dev/null || true")
+os.system("ruff format --silent . 2>/dev/null || true")
+
+# Generate detect-secrets baseline (must happen after git init, before commit)
+if "{{ cookiecutter.precommit }}" == "yes":
+    os.system("detect-secrets scan > .secrets.baseline 2>/dev/null || true")
+
 os.system("git add .")
 os.system('git commit -q -m "Initial project from FastForge"')
 

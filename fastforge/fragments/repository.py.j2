@@ -1,0 +1,59 @@
+"""Repository interface and implementations for {{ Name }} — Data access layer (SOLID: Single Responsibility)."""
+
+import uuid
+from abc import ABC, abstractmethod
+
+from app.api.models.{{ name }} import (
+    {{ Name }}Create,
+    {{ Name }}Response,
+    {{ Name }}Update,
+)
+
+
+class {{ Name }}Repository(ABC):
+    """Abstract repository — swap implementations without changing service layer (SOLID: DIP)."""
+
+    @abstractmethod
+    async def create(self, data: {{ Name }}Create) -> {{ Name }}Response: ...
+
+    @abstractmethod
+    async def get_by_id(self, item_id: str) -> {{ Name }}Response | None: ...
+
+    @abstractmethod
+    async def list_all(self) -> list[{{ Name }}Response]: ...
+
+    @abstractmethod
+    async def update(self, item_id: str, data: {{ Name }}Update) -> {{ Name }}Response | None: ...
+
+    @abstractmethod
+    async def delete(self, item_id: str) -> bool: ...
+
+
+class InMemory{{ Name }}Repository({{ Name }}Repository):
+    """In-memory implementation — used for development and testing."""
+
+    def __init__(self) -> None:
+        self._store: dict[str, {{ Name }}Response] = {}
+
+    async def create(self, data: {{ Name }}Create) -> {{ Name }}Response:
+        item_id = str(uuid.uuid4())
+        item = {{ Name }}Response(id=item_id, **data.model_dump())
+        self._store[item_id] = item
+        return item
+
+    async def get_by_id(self, item_id: str) -> {{ Name }}Response | None:
+        return self._store.get(item_id)
+
+    async def list_all(self) -> list[{{ Name }}Response]:
+        return list(self._store.values())
+
+    async def update(self, item_id: str, data: {{ Name }}Update) -> {{ Name }}Response | None:
+        existing = self._store.get(item_id)
+        if not existing:
+            return None
+        updated = existing.model_copy(update={k: v for k, v in data.model_dump().items() if v is not None})
+        self._store[item_id] = updated
+        return updated
+
+    async def delete(self, item_id: str) -> bool:
+        return self._store.pop(item_id, None) is not None

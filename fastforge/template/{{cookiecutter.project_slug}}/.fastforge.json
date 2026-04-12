@@ -1,0 +1,22 @@
+{
+  "version": "0.0.2",
+  "project_name": "{{ cookiecutter.project_name }}",
+  "project_slug": "{{ cookiecutter.project_slug }}",
+  "package_name": "{{ cookiecutter.package_name }}",
+  "python_version": "{{ cookiecutter.python_version }}",
+  "port": {{ cookiecutter.port }},
+  "models": ["{{ cookiecutter.model_name }}"],
+  "database": "{{ cookiecutter.database }}",
+  "cache": "{{ cookiecutter.cache }}",
+  "streaming": "{{ cookiecutter.streaming }}",
+  "secrets": "{{ cookiecutter.secrets }}",
+  "logging": "{{ cookiecutter.logging }}",
+  "log_format": "{{ cookiecutter.log_format }}",
+  "log_connector": "{{ cookiecutter.log_connector }}",
+  "log_agent": "{{ cookiecutter.log_agent }}",
+  "log_target": "{{ cookiecutter.log_target }}",
+  "quality_gate": "{{ cookiecutter.quality_gate }}",
+  "docker": "{{ cookiecutter.docker }}",
+  "docker_debug": "{{ cookiecutter.docker_debug }}",
+  "precommit": "{{ cookiecutter.precommit }}"
+}

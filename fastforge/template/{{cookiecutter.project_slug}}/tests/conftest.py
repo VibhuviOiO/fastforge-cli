@@ -1,5 +1,10 @@
+import os
+
 import pytest
 from httpx import ASGITransport, AsyncClient
+
+# Disable file logging for tests (avoids /var/log/app permission issues locally)
+os.environ.setdefault("LOG_FILE_ENABLED", "false")
 
 from app.main import app
 

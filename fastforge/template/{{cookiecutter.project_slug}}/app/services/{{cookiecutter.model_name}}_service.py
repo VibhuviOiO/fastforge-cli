@@ -1,13 +1,4 @@
 """Service layer for {{cookiecutter.model_name_class}} — Business logic (SOLID: Single Responsibility)."""
-{% if cookiecutter.logging == "structlog" %}
-from app.logging_config import get_logger
-
-logger = get_logger(__name__)
-{%- else %}
-from logging import getLogger
-
-logger = getLogger(__name__)
-{%- endif %}
 
 from app.api.models.{{cookiecutter.model_name}} import (
     {{cookiecutter.model_name_class}}Create,
@@ -15,7 +6,17 @@ from app.api.models.{{cookiecutter.model_name}} import (
     {{cookiecutter.model_name_class}}Response,
     {{cookiecutter.model_name_class}}Update,
 )
+{%- if cookiecutter.logging == "structlog" %}
+from app.logging_config import get_logger
+{%- else %}
+from logging import getLogger
+{%- endif %}
 from app.repositories.{{cookiecutter.model_name}}_repository import {{cookiecutter.model_name_class}}Repository
+{% if cookiecutter.logging == "structlog" %}
+logger = get_logger(__name__)
+{%- else %}
+logger = getLogger(__name__)
+{%- endif %}
 
 
 class {{cookiecutter.model_name_class}}Service:

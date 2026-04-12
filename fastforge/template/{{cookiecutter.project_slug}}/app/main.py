@@ -1,27 +1,29 @@
 from contextlib import asynccontextmanager
-{% if cookiecutter.logging == "structlog" %}
-from app.logging_config import get_logger, setup_logging
-{% else %}
+{%- if cookiecutter.logging != "structlog" %}
 from logging import getLogger
-{% endif %}
+{%- endif %}
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+{%- if cookiecutter.logging == "structlog" %}
+from app.api.exception_handlers import register_exception_handlers
+{%- endif %}
 from app.api.routes.health import router as health_router
 from app.api.routes.{{ cookiecutter.model_name_plural }} import router as {{ cookiecutter.model_name }}_router
 from app.config import settings
 {%- if cookiecutter.logging == "structlog" %}
-from app.api.exception_handlers import register_exception_handlers
+from app.logging_config import get_logger, setup_logging
 from app.middleware.logging_middleware import RequestLoggingMiddleware
 {%- endif %}
 from app.middleware.security_headers import SecurityHeadersMiddleware
 
-{% if cookiecutter.logging == "structlog" %}
+{% if cookiecutter.logging == "structlog" -%}
 setup_logging()
 logger = get_logger(__name__)
-{% else %}
+{%- else -%}
 logger = getLogger(__name__)
-{% endif %}
+{%- endif %}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

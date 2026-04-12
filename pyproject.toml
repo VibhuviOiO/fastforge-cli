@@ -26,6 +26,8 @@ dependencies = [
     "cookiecutter>=2.6.0",
     "questionary>=2.0.0",
     "rich>=13.0.0",
+    "ruff>=0.8.0",
+    "jinja2>=3.1.0",
 ]
 
 [project.urls]
@@ -36,16 +38,6 @@ Documentation = "https://github.com/VibhuviOiO/fastforge-cli#readme"
 
 [project.scripts]
 fastforge = "fastforge.cli:main"
-fastforge-infra = "fastforge.cli:infra_main"
-fastforge-cicd = "fastforge.cli:cicd_main"
-fastforge-secops = "fastforge.cli:secops_main"
-fastforge-helm = "fastforge.cli:helm_main"
-fastforge-k8s = "fastforge.cli:k8s_main"
-fastforge-swarm = "fastforge.cli:swarm_main"
-fastforge-marathon = "fastforge.cli:marathon_main"
-fastforge-observability = "fastforge.cli:observability_main"
-fastforge-docs = "fastforge.cli:docs_main"
-fastforge-model = "fastforge.cli:model_main"
 
 [build-system]
 requires = ["setuptools>=75.0"]
@@ -55,4 +47,4 @@ build-backend = "setuptools.build_meta"
 include = ["fastforge*"]
 
 [tool.setuptools.package-data]
-fastforge = ["template/**/*", "template/**/.*", "infra_template/**/*", "infra_template/**/.*"]
+fastforge = ["template/**/*", "template/**/.*", "infra_template/**/*", "infra_template/**/.*", "fragments/*.j2"]

@@ -23,19 +23,19 @@ uvicorn app.main:app --reload --port {{ cookiecutter.port }}
 
 ```bash
 # Start all services
-docker compose -f docker/docker-compose.yml up --build
+docker compose -f infra/docker-compose.yml up --build
 
 # Start in detached mode (production)
-docker compose -f docker/docker-compose.yml up --build -d
+docker compose -f infra/docker-compose.yml up --build -d
 
 # View logs
-docker compose -f docker/docker-compose.yml logs -f app
+docker compose -f infra/docker-compose.yml logs -f app
 
 # Stop
-docker compose -f docker/docker-compose.yml down
+docker compose -f infra/docker-compose.yml down
 
 # Stop and remove volumes
-docker compose -f docker/docker-compose.yml down -v
+docker compose -f infra/docker-compose.yml down -v
 ```
 {%- if cookiecutter.docker_debug == "yes" %}
 
@@ -233,11 +233,79 @@ pytest tests/ --cov=app --cov-report=html
 - Secrets loaded at startup into `app.state.secrets`
 - Configure via `GCP_PROJECT_ID`, `GCP_SECRET_NAME`
 {%- endif %}
-{%- if cookiecutter.quality_gate != "none" %}
+{%- if cookiecutter.quality_gate == "sonarqube" %}
 
-### Quality Gate
+### Quality Gate (SonarQube)
 
-- **Tool:** {{ cookiecutter.quality_gate }}
+Config file: `sonar-project.properties`
+
+```bash
+# 1. Run tests with coverage + JUnit reports
+pytest tests/ --cov=app --cov-report=xml:coverage.xml --junitxml=test-results.xml
+
+# 2. Run SonarQube analysis (requires sonar-scanner installed)
+#    Set SONAR_HOST_URL and SONAR_TOKEN in your environment
+export SONAR_HOST_URL=http://your-sonarqube:9000
+export SONAR_TOKEN=your-token
+sonar-scanner
+```
+
+Install sonar-scanner: `brew install sonar-scanner` (macOS) or [download](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner/)
+{%- endif %}
+{%- if cookiecutter.quality_gate == "sonarcloud" %}
+
+### Quality Gate (SonarCloud)
+
+Config file: `sonar-project.properties` — update `sonar.organization` with your org.
+
+```bash
+# 1. Run tests with coverage + JUnit reports
+pytest tests/ --cov=app --cov-report=xml:coverage.xml --junitxml=test-results.xml
+
+# 2. Run SonarCloud analysis
+#    Set SONAR_TOKEN from https://sonarcloud.io/account/security
+export SONAR_TOKEN=your-token
+sonar-scanner
+```
+
+Install sonar-scanner: `brew install sonar-scanner` (macOS) or [download](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner/)
+{%- endif %}
+{%- if cookiecutter.quality_gate == "qodana" %}
+
+### Quality Gate (Qodana)
+
+Config file: `qodana.yaml`
+
+```bash
+# Run Qodana locally via Docker
+docker run --rm \
+  -v $(pwd):/data/project \
+  -v $(pwd)/.qodana:/data/results \
+  jetbrains/qodana-python:latest
+
+# View results
+open .qodana/report/index.html
+```
+
+Or install [Qodana CLI](https://github.com/JetBrains/qodana-cli): `brew install jetbrains/utils/qodana && qodana scan`
+{%- endif %}
+{%- if cookiecutter.quality_gate == "codeclimate" %}
+
+### Quality Gate (Code Climate)
+
+Config file: `.codeclimate.yml`
+
+```bash
+# Run Code Climate locally via Docker
+docker run --rm \
+  --env CODECLIMATE_CODE=$(pwd) \
+  -v $(pwd):/code \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  codeclimate/codeclimate analyze
+
+# Or use the CLI: https://github.com/codeclimate/codeclimate
+codeclimate analyze
+```
 {%- endif %}
 {%- if cookiecutter.docker == "yes" %}
 
@@ -253,9 +321,30 @@ pytest tests/ --cov=app --cov-report=html
 ### Code Quality
 
 - **Linting**: ruff (replaces flake8 + isort + black)
-- **Pre-commit hooks**: Automated ruff + pytest on every commit
+- **Pre-commit hooks**: ruff lint/format + pytest + secrets detection on every commit
 - **Testing**: pytest + pytest-asyncio, async test client
 - **Coverage**: `pytest --cov=app --cov-report=html`
+
+#### Setup pre-commit hooks
+
+```bash
+# Install (one-time, after pip install -e ".[dev]")
+pre-commit install
+
+# Run all hooks manually
+pre-commit run --all-files
+
+# Skip hooks temporarily (not recommended)
+git commit --no-verify -m "wip"
+```
+
+Hooks configured (`.pre-commit-config.yaml`):
+| Hook | What it does |
+|------|------|
+| `ruff` | Lint + auto-fix (isort, pyflakes, bandit, bugbear) |
+| `ruff-format` | Code formatting |
+| `detect-secrets` | Blocks commits containing API keys, tokens, passwords |
+| `pytest` | Runs test suite — commit fails if tests fail |
 {%- endif %}
 
 ## Environment
@@ -268,7 +357,7 @@ Configuration is managed via environment variables. See `.env.staging`.
 
 ### Included: {{ cookiecutter.log_agent }} sidecar → {{ cookiecutter.log_target }}
 
-A **{{ cookiecutter.log_agent }}** sidecar is included in `docker/docker-compose.yml`.
+A **{{ cookiecutter.log_agent }}** sidecar is included in `infra/docker-compose.yml`.
 It reads structured JSON logs from `/var/log/app/*.log` and forwards them to **{{ cookiecutter.log_target }}**.
 
 #### How it works
@@ -294,7 +383,7 @@ It reads structured JSON logs from `/var/log/app/*.log` and forwards them to **{
 {%- endif %}
 
 # 2. Start the app + {{ cookiecutter.log_agent }} sidecar
-docker compose -f docker/docker-compose.yml up --build -d
+docker compose -f infra/docker-compose.yml up --build -d
 
 # 3. Verify the app is running
 curl http://localhost:{{ cookiecutter.port }}/health
@@ -314,11 +403,11 @@ docker logs {{ cookiecutter.project_slug }}-{{ cookiecutter.log_agent }}
 
 Config files:
 {%- if cookiecutter.log_agent == "vector" %}
-- `docker/vector/vector.toml` — Vector pipeline config
+- `infra/vector/vector.toml` — Vector pipeline config
 {%- endif %}
 {%- if cookiecutter.log_agent == "fluentbit" %}
-- `docker/fluentbit/fluent-bit.conf` — Fluent Bit pipeline config
-- `docker/fluentbit/parsers.conf` — JSON log parser
+- `infra/fluentbit/fluent-bit.conf` — Fluent Bit pipeline config
+- `infra/fluentbit/parsers.conf` — JSON log parser
 {%- endif %}
 
 ### If your environment already has a log daemon
@@ -361,7 +450,7 @@ app to stdout-only logging:
 LOG_FILE_ENABLED=false
 ```
 
-Then remove the {{ cookiecutter.log_agent }} sidecar from `docker/docker-compose.yml`.
+Then remove the {{ cookiecutter.log_agent }} sidecar from `infra/docker-compose.yml`.
 {%- else %}
 
 ### Logs go to stdout (container output)
@@ -429,7 +518,7 @@ LOG_FILE_ENABLED=true
 ```
 
 Then re-run `fastforge` in advanced mode to generate Vector or Fluent Bit
-sidecar config, or add manually to `docker/docker-compose.yml`.
+sidecar config, or add manually to `infra/docker-compose.yml`.
 {%- endif %}
 {%- endif %}
 

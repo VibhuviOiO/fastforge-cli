@@ -1,7 +1,6 @@
 """FastAPI dependency injection — wires repository → service (SOLID: Dependency Inversion)."""
 
 from app.repositories.{{ cookiecutter.model_name }}_repository import (
-    {{ cookiecutter.model_name_class }}Repository,
     InMemory{{ cookiecutter.model_name_class }}Repository,
 {%- if cookiecutter.database in ("postgres", "mysql", "sqlite") %}
     SQLAlchemy{{ cookiecutter.model_name_class }}Repository,

@@ -1,0 +1,72 @@
+{%- if logging != "structlog" %}
+from logging import getLogger
+{% endif -%}
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.api.models.{{ name }} import (
+    {{ Name }}Create,
+    {{ Name }}ListResponse,
+    {{ Name }}Response,
+    {{ Name }}Update,
+)
+from app.dependencies import get_{{ name }}_service
+{%- if logging == "structlog" %}
+from app.logging_config import get_logger
+{%- endif %}
+from app.services.{{ name }}_service import {{ Name }}Service
+
+router = APIRouter(prefix="/api/v1/{{ names }}", tags=["{{ names }}"])
+
+{% if logging == "structlog" -%}
+logger = get_logger(__name__)
+{%- else -%}
+logger = getLogger(__name__)
+{%- endif %}
+
+
+@router.post("/", response_model={{ Name }}Response, status_code=201)
+async def create_{{ name }}(
+    data: {{ Name }}Create,
+    service: {{ Name }}Service = Depends(get_{{ name }}_service),
+) -> {{ Name }}Response:
+    return await service.create(data)
+
+
+@router.get("/", response_model={{ Name }}ListResponse)
+async def list_{{ names }}(
+    service: {{ Name }}Service = Depends(get_{{ name }}_service),
+) -> {{ Name }}ListResponse:
+    return await service.list_all()
+
+
+@router.get("/{item_id}", response_model={{ Name }}Response)
+async def get_{{ name }}(
+    item_id: str,
+    service: {{ Name }}Service = Depends(get_{{ name }}_service),
+) -> {{ Name }}Response:
+    result = await service.get_by_id(item_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="{{ Name }} not found")
+    return result
+
+
+@router.put("/{item_id}", response_model={{ Name }}Response)
+async def update_{{ name }}(
+    item_id: str,
+    data: {{ Name }}Update,
+    service: {{ Name }}Service = Depends(get_{{ name }}_service),
+) -> {{ Name }}Response:
+    result = await service.update(item_id, data)
+    if not result:
+        raise HTTPException(status_code=404, detail="{{ Name }} not found")
+    return result
+
+
+@router.delete("/{item_id}", status_code=204)
+async def delete_{{ name }}(
+    item_id: str,
+    service: {{ Name }}Service = Depends(get_{{ name }}_service),
+) -> None:
+    deleted = await service.delete(item_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="{{ Name }} not found")

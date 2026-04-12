@@ -1,0 +1,22 @@
+from pydantic import BaseModel, Field
+
+
+class {{ Name }}Create(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=1000)
+
+
+class {{ Name }}Update(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=1000)
+
+
+class {{ Name }}Response(BaseModel):
+    id: str
+    name: str
+    description: str | None
+
+
+class {{ Name }}ListResponse(BaseModel):
+    {{ names }}: list[{{ Name }}Response]
+    total: int

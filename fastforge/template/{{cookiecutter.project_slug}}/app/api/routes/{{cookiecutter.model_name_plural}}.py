@@ -1,8 +1,6 @@
-{% if cookiecutter.logging == "structlog" -%}
-from app.logging_config import get_logger
-{%- else -%}
+{%- if cookiecutter.logging != "structlog" %}
 from logging import getLogger
-{%- endif %}
+{% endif -%}
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.models.{{cookiecutter.model_name}} import (
@@ -12,6 +10,9 @@ from app.api.models.{{cookiecutter.model_name}} import (
     {{cookiecutter.model_name_class}}Update,
 )
 from app.dependencies import get_{{cookiecutter.model_name}}_service
+{%- if cookiecutter.logging == "structlog" %}
+from app.logging_config import get_logger
+{%- endif %}
 from app.services.{{cookiecutter.model_name}}_service import {{cookiecutter.model_name_class}}Service
 
 router = APIRouter(prefix="/api/v1/{{cookiecutter.model_name_plural}}", tags=["{{cookiecutter.model_name_plural}}"])
