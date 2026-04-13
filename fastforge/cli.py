@@ -22,7 +22,6 @@ from fastforge import __version__
 console = Console()
 
 TEMPLATE_DIR = str(Path(__file__).parent / "template")
-INFRA_TEMPLATE_DIR = str(Path(__file__).parent / "infra_template")
 
 
 # ── File categories for selective overwrite ──────────────────────────────────
@@ -707,178 +706,6 @@ def _cmd_new():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# fastforge infra  (infrastructure stack)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-INFRA_BANNER = f"""
-[bold bright_blue]  ╔═╗╔═╗╔═╗╔╦╗  ╔═╗╔═╗╦═╗╔═╗╔═╗[/]
-[bold bright_cyan]  ╠╣ ╠═╣╚═╗ ║   ╠╣ ║ ║╠╦╝║ ╦║╣ [/]
-[bold cyan]  ╚  ╩ ╩╚═╝ ╩   ╚  ╚═╝╩╚═╚═╝╚═╝[/]
-[bold white]  Infrastructure Stack Generator[/]  [dim italic]v{__version__}[/]
-"""
-
-
-def ask_infra_basics() -> dict:
-    """Infrastructure basics."""
-    _section("📦  Infrastructure Basics")
-    return {
-        "project_slug": questionary.text(
-            "Target project slug (used for container naming):",
-            default="my-fastapi-service",
-            validate=lambda x: bool(x.strip()) or "Required",
-            style=CUSTOM_STYLE,
-        ).ask(),
-    }
-
-
-def ask_infra_log_pipeline() -> dict:
-    """Log pipeline configuration for infrastructure."""
-    _section("📋  Log Pipeline")
-    enabled = questionary.confirm(
-        "Set up a log collection pipeline (agent → Kafka → aggregator → Elasticsearch)?",
-        default=False,
-        style=CUSTOM_STYLE,
-    ).ask()
-
-    if not enabled:
-        return {"log_agent": "none", "log_aggregator": "none"}
-
-    agent = questionary.select(
-        "Log collection agent:",
-        choices=[
-            questionary.Choice("Vector (Rust, lightweight)", value="vector"),
-            questionary.Choice("Fluent Bit (C, CNCF)", value="fluentbit"),
-        ],
-        default="vector",
-        style=CUSTOM_STYLE,
-    ).ask()
-
-    aggregator = questionary.select(
-        "Log aggregator / pipeline:",
-        choices=[
-            questionary.Choice("Vector aggregator", value="vector"),
-            questionary.Choice("Logstash", value="logstash"),
-        ],
-        default="vector",
-        style=CUSTOM_STYLE,
-    ).ask()
-
-    return {"log_agent": agent, "log_aggregator": aggregator}
-
-
-def ask_infra_services() -> dict:
-    """Supporting services."""
-    _section("🔧  Services")
-    result = {"streaming": "none", "database": "none", "secrets": "none"}
-
-    if questionary.confirm("Include Kafka (message broker)?", default=False, style=CUSTOM_STYLE).ask():
-        result["streaming"] = "enabled"
-
-    db = questionary.select(
-        "Database:",
-        choices=[
-            questionary.Choice("None", value="none"),
-            questionary.Choice("PostgreSQL", value="postgres"),
-            questionary.Choice("MongoDB", value="mongodb"),
-        ],
-        default="none",
-        style=CUSTOM_STYLE,
-    ).ask()
-    result["database"] = db
-
-    if questionary.confirm("Include HashiCorp Vault?", default=False, style=CUSTOM_STYLE).ask():
-        result["secrets"] = "vault"
-
-    return result
-
-
-def show_infra_summary(ctx: dict) -> None:
-    """Display infrastructure summary."""
-    table = Table(
-        title="[bold]Infrastructure Configuration[/]",
-        show_header=True,
-        header_style="bold bright_white",
-        border_style="bright_cyan",
-    )
-    table.add_column("Component", style="cyan", min_width=16)
-    table.add_column("Value", style="bright_green")
-
-    table.add_row("Project", ctx["project_slug"])
-
-    if ctx["log_agent"] != "none":
-        table.add_row("Log agent", ctx["log_agent"])
-        table.add_row("Log aggregator", ctx["log_aggregator"])
-        table.add_row("Elasticsearch", "yes")
-        table.add_row("Kafka", "yes (log transport)")
-    elif ctx["streaming"] != "none":
-        table.add_row("Kafka", "yes (streaming)")
-    else:
-        table.add_row("Kafka", "no")
-
-    table.add_row("Database", ctx["database"] if ctx["database"] != "none" else "none")
-    table.add_row("Vault", "yes" if ctx["secrets"] == "vault" else "no")
-
-    console.print()
-    console.print(table)
-
-
-def generate_infra(ctx: dict) -> None:
-    """Generate infrastructure stack."""
-    output_dir = os.getcwd()
-
-    with console.status("[bold cyan]Generating infrastructure...[/]", spinner="dots"):
-        cookiecutter(
-            INFRA_TEMPLATE_DIR,
-            no_input=True,
-            extra_context=ctx,
-            output_dir=output_dir,
-        )
-
-    infra_dir = os.path.join(output_dir, f"{ctx['project_slug']}-infrastructure")
-
-    console.print()
-    console.print(
-        Panel(
-            f"[{STYLE_SUCCESS}]✔ Infrastructure created:[/] [bold]{infra_dir}[/]\n\n"
-            f"  [bold]cd {ctx['project_slug']}-infrastructure[/]\n"
-            f"  [green]docker compose up -d[/]",
-            title="[bold bright_cyan]🚀 Next Steps[/]",
-            border_style="green",
-            padding=(1, 2),
-        )
-    )
-
-
-def _cmd_infra():
-    """Generate standalone infrastructure stack (interactive)."""
-    console.print(INFRA_BANNER)
-    console.print(f"  [{STYLE_HINT}]Generate Docker Compose infrastructure stack for your project.[/]\n")
-
-    try:
-        ctx = {}
-        ctx.update(ask_infra_basics())
-        ctx.update(ask_infra_log_pipeline())
-        ctx.update(ask_infra_services())
-
-        show_infra_summary(ctx)
-
-        proceed = questionary.confirm("\nGenerate infrastructure stack?", default=True, style=CUSTOM_STYLE).ask()
-        if not proceed:
-            console.print(f"[{STYLE_WARN}]Aborted.[/]")
-            sys.exit(0)
-
-        generate_infra(ctx)
-
-    except KeyboardInterrupt:
-        console.print(f"\n[{STYLE_WARN}]Aborted.[/]")
-        sys.exit(1)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Subcommand stubs  (placeholder entry points)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # fastforge add model
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1077,6 +904,163 @@ def _cmd_add_stub(feature: str, description: str):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# fastforge add kafka
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _cmd_add_kafka():
+    """Add Kafka streaming with producer, consumer, and local infrastructure."""
+    console.print(BANNER)
+
+    from fastforge.generators.kafka import add_kafka
+    from fastforge.project_config import find_project_root, load_config
+
+    project_dir = find_project_root()
+    if not project_dir:
+        console.print("[red]✘ No .fastforge.json found. Run from inside a FastForge project.[/]")
+        sys.exit(1)
+
+    config = load_config(project_dir)
+
+    if config.get("streaming") == "kafka":
+        console.print("[green]✔ Kafka streaming is already configured in this project.[/]")
+        return
+
+    console.print(f"[dim]Project: {config.get('project_slug', 'unknown')}[/]\n")
+    console.print(Panel(
+        "[bold]This will:[/]\n"
+        "  + Create app/streaming/ with producer.py, consumer.py, handler.py\n"
+        "  + Add aiokafka dependency\n"
+        "  + Add Kafka settings to config.py and .env.staging\n"
+        "  + Add consumer lifespan hooks to main.py\n"
+        "  + Generate infra/docker-compose.kafka.yml\n"
+        "  + Update .fastforge.json",
+        title="[bold bright_cyan]📋 Add Kafka Streaming[/]",
+        border_style="cyan",
+        padding=(1, 2),
+    ))
+
+    confirm = questionary.confirm("Proceed?", default=True).ask()
+    if not confirm:
+        console.print("[yellow]Aborted.[/]")
+        return
+
+    try:
+        result = add_kafka(project_dir)
+    except (ValueError, FileNotFoundError) as e:
+        console.print(f"[red]✘ {e}[/]")
+        sys.exit(1)
+
+    lines = []
+    for f in result.get("created", []):
+        lines.append(f"  [green]+[/] {f}")
+    for f in result.get("modified", []):
+        lines.append(f"  [yellow]~[/] {f}")
+
+    console.print()
+    console.print(Panel(
+        "[bold green]✔ Kafka streaming added[/]\n\n"
+        + "\n".join(lines)
+        + "\n\n[bold]Next steps:[/]\n"
+        + "  1. [green]pip install -e '.[dev]'[/]  [dim]# install aiokafka[/]\n"
+        + "  2. [green]docker compose -f infra/docker-compose.kafka.yml up -d[/]\n"
+        + "  3. Edit [cyan]app/streaming/handler.py[/] with your business logic",
+        title="[bold bright_cyan]🚀 Done[/]",
+        border_style="green",
+        padding=(1, 2),
+    ))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# fastforge add observability
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _cmd_add_observability():
+    """Add OpenTelemetry tracing + Prometheus metrics with infrastructure stack choice."""
+    console.print(BANNER)
+
+    from fastforge.generators.observability import add_observability
+    from fastforge.project_config import find_project_root, load_config
+
+    project_dir = find_project_root()
+    if not project_dir:
+        console.print("[red]✘ No .fastforge.json found. Run from inside a FastForge project.[/]")
+        sys.exit(1)
+
+    config = load_config(project_dir)
+
+    if config.get("observability") == "enabled":
+        console.print("[green]✔ Observability is already configured in this project.[/]")
+        return
+
+    console.print(f"[dim]Project: {config.get('project_slug', 'unknown')}[/]\n")
+
+    stack = questionary.select(
+        "Which observability stack?",
+        choices=[
+            questionary.Choice("Jaeger — distributed tracing (lightweight)", value="jaeger"),
+            questionary.Choice("ELK — Elasticsearch + Kibana + APM (logs + traces + APM)", value="elk"),
+            questionary.Choice("Grafana — Prometheus + Loki + Tempo + Grafana (full metrics + logs + traces)", value="grafana"),
+        ],
+        default="jaeger",
+    ).ask()
+    if not stack:
+        console.print("[yellow]Aborted.[/]")
+        return
+
+    stack_desc = {
+        "jaeger": "Jaeger all-in-one (UI:16686, OTLP:4317)",
+        "elk": "Elasticsearch + Kibana + APM Server",
+        "grafana": "Prometheus + Loki + Tempo + Grafana",
+    }
+
+    console.print(Panel(
+        "[bold]This will:[/]\n"
+        "  + Create app/telemetry/ with tracing.py and metrics.py\n"
+        "  + Add OpenTelemetry + Prometheus dependencies\n"
+        "  + Add /metrics endpoint and tracing setup to main.py\n"
+        "  + Add OTEL_* config to config.py and .env.staging\n"
+        f"  + Generate infra/docker-compose.{stack}.yml ({stack_desc[stack]})\n"
+        "  + Update .fastforge.json",
+        title="[bold bright_cyan]📋 Add Observability[/]",
+        border_style="cyan",
+        padding=(1, 2),
+    ))
+
+    confirm = questionary.confirm("Proceed?", default=True).ask()
+    if not confirm:
+        console.print("[yellow]Aborted.[/]")
+        return
+
+    try:
+        result = add_observability(project_dir, stack=stack)
+    except (ValueError, FileNotFoundError) as e:
+        console.print(f"[red]✘ {e}[/]")
+        sys.exit(1)
+
+    lines = []
+    for f in result.get("created", []):
+        lines.append(f"  [green]+[/] {f}")
+    for f in result.get("modified", []):
+        lines.append(f"  [yellow]~[/] {f}")
+
+    console.print()
+    console.print(Panel(
+        "[bold green]✔ Observability added[/]\n\n"
+        + "\n".join(lines)
+        + "\n\n[bold]Next steps:[/]\n"
+        + "  1. [green]pip install -e '.[dev]'[/]  [dim]# install OTel + Prometheus deps[/]\n"
+        + f"  2. [green]docker compose -f infra/docker-compose.{stack}.yml up -d[/]\n"
+        + "  3. Set [cyan]OTEL_ENABLED=true[/] in .env.staging\n"
+        + "  4. Access metrics at [cyan]/metrics[/]",
+        title="[bold bright_cyan]🚀 Done[/]",
+        border_style="green",
+        padding=(1, 2),
+    ))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # fastforge doctor
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1181,13 +1165,88 @@ def _print_doctor_table(checks: list[tuple[str, bool, str]]) -> None:
 
 
 def _cmd_deploy(target: str):
-    """Deploy the service."""
+    """Deploy the service or generate deployment manifests."""
     if target == "local":
         _cmd_deploy_local()
+        return
+
+    console.print(BANNER)
+
+    from fastforge.generators.deploy import (
+        deploy_compose,
+        deploy_helm,
+        deploy_k8s,
+        deploy_marathon,
+        deploy_swarm,
+    )
+    from fastforge.project_config import find_project_root, load_config
+
+    project_dir = find_project_root()
+    if not project_dir:
+        console.print("[red]✘ No .fastforge.json found. Run from inside a FastForge project.[/]")
+        sys.exit(1)
+
+    config = load_config(project_dir)
+    deploy_list = config.get("deploy", [])
+
+    if target in deploy_list:
+        console.print(f"[green]✔ {target} deployment is already configured in this project.[/]")
+        return
+
+    target_names = {
+        "compose": "Docker Compose (production)",
+        "swarm": "Docker Swarm",
+        "k8s": "Kubernetes",
+        "helm": "Helm chart",
+        "marathon": "Marathon",
+    }
+
+    console.print(f"[dim]Project: {config.get('project_slug', 'unknown')}[/]\n")
+    console.print(Panel(
+        f"[bold]Generate {target_names[target]} deployment manifests[/]\n\n"
+        f"Creates deploy/{target}/ directory with production-ready manifests.",
+        title=f"[bold bright_cyan]📋 Deploy → {target_names[target]}[/]",
+        border_style="cyan",
+        padding=(1, 2),
+    ))
+
+    confirm = questionary.confirm("Proceed?", default=True).ask()
+    if not confirm:
+        console.print("[yellow]Aborted.[/]")
+        return
+
+    generators = {
+        "compose": deploy_compose,
+        "swarm": deploy_swarm,
+        "k8s": deploy_k8s,
+        "helm": deploy_helm,
+        "marathon": deploy_marathon,
+    }
+
+    try:
+        result = generators[target](project_dir)
+    except (ValueError, FileNotFoundError) as e:
+        console.print(f"[red]✘ {e}[/]")
+        sys.exit(1)
+
+    lines = []
+    for f in result.get("created", []):
+        lines.append(f"  [green]+[/] {f}")
+    for f in result.get("modified", []):
+        lines.append(f"  [yellow]~[/] {f}")
+
+    console.print()
+    console.print(Panel(
+        f"[bold green]✔ {target_names[target]} manifests generated[/]\n\n"
+        + "\n".join(lines),
+        title="[bold bright_cyan]🚀 Done[/]",
+        border_style="green",
+        padding=(1, 2),
+    ))
 
 
 def _cmd_deploy_local():
-    """Deploy locally using Docker Compose."""
+    """Deploy locally using Docker Compose — auto-detects all infra compose files."""
     console.print(BANNER)
 
     from fastforge.project_config import find_project_root
@@ -1197,17 +1256,219 @@ def _cmd_deploy_local():
         console.print("[red]✘ No .fastforge.json found. Run from inside a FastForge project.[/]")
         sys.exit(1)
 
-    compose_file = os.path.join(project_dir, "infra", "docker-compose.yml")
-    if not os.path.isfile(compose_file):
+    infra_dir = os.path.join(project_dir, "infra")
+    base_compose = os.path.join(infra_dir, "docker-compose.yml")
+    if not os.path.isfile(base_compose):
         console.print("[red]✘ No infra/docker-compose.yml found.[/]")
         sys.exit(1)
 
-    console.print("[bold cyan]Starting local infrastructure...[/]\n")
-    result = subprocess.run(
-        ["docker", "compose", "-f", compose_file, "up", "--build"],
-        cwd=project_dir,
-    )
+    # Auto-detect all docker-compose.*.yml files
+    compose_files = [base_compose]
+    if os.path.isdir(infra_dir):
+        for f in sorted(os.listdir(infra_dir)):
+            if f.startswith("docker-compose.") and f.endswith(".yml") and f != "docker-compose.yml":
+                compose_files.append(os.path.join(infra_dir, f))
+
+    # Build the command
+    cmd = ["docker", "compose"]
+    for cf in compose_files:
+        cmd.extend(["-f", cf])
+    cmd.extend(["up", "--build"])
+
+    # Show what we're starting
+    console.print("[bold cyan]Starting local services...[/]\n")
+    for cf in compose_files:
+        console.print(f"  [dim]→ {os.path.relpath(cf, project_dir)}[/]")
+    console.print()
+
+    result = subprocess.run(cmd, cwd=project_dir)
     sys.exit(result.returncode)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# fastforge secure <action>
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _cmd_secure(action: str):
+    """Run a security command."""
+    console.print(BANNER)
+
+    from fastforge.generators.secure import (
+        secure_audit,
+        secure_license,
+        secure_owasp,
+        secure_sbom,
+        secure_scan,
+        secure_setup,
+    )
+    from fastforge.project_config import find_project_root, load_config
+
+    project_dir = find_project_root()
+    if not project_dir:
+        console.print("[red]✘ No .fastforge.json found. Run from inside a FastForge project.[/]")
+        sys.exit(1)
+
+    config = load_config(project_dir)
+    console.print(f"[dim]Project: {config.get('project_slug', 'unknown')}[/]\n")
+
+    if action == "setup":
+        if config.get("secure") == "enabled":
+            console.print("[green]✔ Security configs are already set up in this project.[/]")
+            return
+
+        console.print(Panel(
+            "[bold]This will create:[/]\n"
+            "  + .gitleaks.toml — Secret scanning config\n"
+            "  + .trivy.yaml — Container vulnerability scanner config",
+            title="[bold bright_cyan]📋 Security Setup[/]",
+            border_style="cyan",
+            padding=(1, 2),
+        ))
+
+        confirm = questionary.confirm("Proceed?", default=True).ask()
+        if not confirm:
+            console.print("[yellow]Aborted.[/]")
+            return
+
+        try:
+            result = secure_setup(project_dir)
+        except (ValueError, FileNotFoundError) as e:
+            console.print(f"[red]✘ {e}[/]")
+            sys.exit(1)
+
+        lines = []
+        for f in result.get("created", []):
+            lines.append(f"  [green]+[/] {f}")
+        for f in result.get("modified", []):
+            lines.append(f"  [yellow]~[/] {f}")
+
+        console.print()
+        console.print(Panel(
+            "[bold green]✔ Security configs added[/]\n\n" + "\n".join(lines),
+            title="[bold bright_cyan]🚀 Done[/]",
+            border_style="green",
+            padding=(1, 2),
+        ))
+
+    elif action == "scan":
+        sys.exit(secure_scan(project_dir))
+
+    elif action == "sbom":
+        sys.exit(secure_sbom(project_dir))
+
+    elif action == "license":
+        sys.exit(secure_license(project_dir))
+
+    elif action == "audit":
+        sys.exit(secure_audit(project_dir))
+
+    elif action == "owasp":
+        sys.exit(secure_owasp(project_dir))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# fastforge ci <provider>
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _cmd_ci(provider: str):
+    """Generate CI/CD pipeline for a provider or run locally."""
+    console.print(BANNER)
+
+    from fastforge.project_config import find_project_root, load_config
+
+    project_dir = find_project_root()
+    if not project_dir:
+        console.print("[red]✘ No .fastforge.json found. Run from inside a FastForge project.[/]")
+        sys.exit(1)
+
+    config = load_config(project_dir)
+
+    # ── Run pipeline locally ─────────────────────────────
+    if provider == "local":
+        from fastforge.generators.ci import ci_local
+
+        console.print(f"[dim]Project: {config.get('project_slug', 'unknown')}[/]\n")
+        console.print(Panel(
+            "[bold]This will run locally:[/]\n"
+            "  • ruff check (lint)\n"
+            "  • ruff format --check (formatting)\n"
+            "  • pytest (tests)\n"
+            "  • bandit (SAST, if installed)\n"
+            "  • pip-audit (dependency audit, if installed)\n"
+            "  • docker build (if Dockerfile exists)\n"
+            "  • trivy (container scan, if installed)",
+            title="[bold bright_cyan]📋 CI Local Pipeline[/]",
+            border_style="cyan",
+            padding=(1, 2),
+        ))
+
+        confirm = questionary.confirm("Proceed?", default=True).ask()
+        if not confirm:
+            console.print("[yellow]Aborted.[/]")
+            return
+
+        sys.exit(ci_local(project_dir))
+
+    # ── Generate CI config file ──────────────────────────
+    from fastforge.generators.ci import add_ci
+
+    ci_list = config.get("ci", [])
+
+    if provider in ci_list:
+        console.print(f"[green]✔ {provider} CI/CD is already configured in this project.[/]")
+        return
+
+    provider_desc = {
+        "github": ("GitHub Actions", ".github/workflows/ci.yml"),
+        "gitlab": ("GitLab CI", ".gitlab-ci.yml"),
+        "bitbucket": ("Bitbucket Pipelines", "bitbucket-pipelines.yml"),
+        "jenkins": ("Jenkins", "Jenkinsfile"),
+    }
+
+    name, file_path = provider_desc[provider]
+
+    console.print(f"[dim]Project: {config.get('project_slug', 'unknown')}[/]\n")
+    console.print(Panel(
+        f"[bold]This will create:[/]\n"
+        f"  + {file_path}\n\n"
+        "[bold]Pipeline includes:[/]\n"
+        "  • Test & Lint (ruff + pytest + coverage)\n"
+        "  • SAST (Bandit security scan)\n"
+        "  • Secret scanning (Gitleaks)\n"
+        "  • Dependency audit (pip-audit)\n"
+        "  • Docker build + push\n"
+        "  • Trivy container scanning",
+        title=f"[bold bright_cyan]📋 CI/CD → {name}[/]",
+        border_style="cyan",
+        padding=(1, 2),
+    ))
+
+    confirm = questionary.confirm("Proceed?", default=True).ask()
+    if not confirm:
+        console.print("[yellow]Aborted.[/]")
+        return
+
+    try:
+        result = add_ci(project_dir, provider)
+    except (ValueError, FileNotFoundError) as e:
+        console.print(f"[red]✘ {e}[/]")
+        sys.exit(1)
+
+    lines = []
+    for f in result.get("created", []):
+        lines.append(f"  [green]+[/] {f}")
+    for f in result.get("modified", []):
+        lines.append(f"  [yellow]~[/] {f}")
+
+    console.print()
+    console.print(Panel(
+        f"[bold green]✔ {name} pipeline added[/]\n\n" + "\n".join(lines),
+        title="[bold bright_cyan]🚀 Done[/]",
+        border_style="green",
+        padding=(1, 2),
+    ))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1225,29 +1486,71 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command", title="commands")
 
-    # fastforge new
-    subparsers.add_parser("new", help="Create a new FastAPI service")
+    # ─── fastforge new [service] ─────────────────────────
+    new_parser = subparsers.add_parser(
+        "new",
+        help="Create a new FastAPI service",
+        description="Scaffold a production-grade FastAPI project with interactive prompts for database, cache, streaming, secrets, logging, quality gates, and Docker support.",
+    )
+    new_parser.add_argument("type", nargs="?", default="service", choices=["service"], help="Project type (default: service)")
 
-    # fastforge add
-    add_parser = subparsers.add_parser("add", help="Add a feature to an existing project")
+    # ─── fastforge add <feature> ─────────────────────────
+    add_parser = subparsers.add_parser(
+        "add",
+        help="Add a feature to an existing project",
+        description="Add features to an existing FastForge project: models, databases, observability, and more.",
+    )
     add_sub = add_parser.add_subparsers(dest="feature", title="features")
     model_p = add_sub.add_parser("model", help="Add a new CRUD model")
     model_p.add_argument("name", nargs="?", help="Model name (singular, snake_case)")
     add_sub.add_parser("postgres", help="Add PostgreSQL database")
     add_sub.add_parser("kafka", help="Add Kafka streaming")
     add_sub.add_parser("redis", help="Add Redis cache")
-    add_sub.add_parser("observability", help="Add observability stack")
+    add_sub.add_parser("observability", help="Add OpenTelemetry tracing + Prometheus metrics")
     add_sub.add_parser("auth", help="Add authentication")
 
-    # fastforge deploy
-    deploy_p = subparsers.add_parser("deploy", help="Deploy the service")
-    deploy_p.add_argument("target", nargs="?", default="local", choices=["local"], help="Deployment target (default: local)")
+    # ─── fastforge deploy <target> ───────────────────────
+    deploy_p = subparsers.add_parser(
+        "deploy",
+        help="Deploy the service or generate deployment manifests",
+        description="Run the service locally or generate deployment manifests for Kubernetes, Docker Swarm, Helm, Marathon, or Docker Compose.",
+    )
+    deploy_p.add_argument(
+        "target",
+        choices=["local", "compose", "swarm", "k8s", "helm", "marathon"],
+        help="Deployment target",
+    )
 
-    # fastforge doctor
-    subparsers.add_parser("doctor", help="Check project health")
+    # ─── fastforge secure <action> ───────────────────────
+    secure_p = subparsers.add_parser(
+        "secure",
+        help="Security tooling and checks",
+        description="Security commands: setup configs, scan images, generate SBOM, check licenses, audit dependencies, OWASP ZAP scan.",
+    )
+    secure_p.add_argument(
+        "action",
+        choices=["setup", "scan", "sbom", "license", "audit", "owasp"],
+        help="Security action to perform",
+    )
 
-    # fastforge infra (standalone infrastructure)
-    subparsers.add_parser("infra", help="Generate standalone infrastructure stack")
+    # ─── fastforge ci <provider> ─────────────────────────
+    ci_p = subparsers.add_parser(
+        "ci",
+        help="Generate CI/CD pipeline or run locally",
+        description="Generate CI/CD pipeline configuration for GitHub Actions, GitLab CI, Bitbucket Pipelines, Jenkins, or run the pipeline locally.",
+    )
+    ci_p.add_argument(
+        "provider",
+        choices=["github", "gitlab", "bitbucket", "jenkins", "local"],
+        help="CI/CD provider or 'local' to run pipeline locally",
+    )
+
+    # ─── fastforge doctor ────────────────────────────────
+    subparsers.add_parser(
+        "doctor",
+        help="Check project health",
+        description="Run 8 health checks: pyproject.toml, app/ structure, Dockerfile, tests/, .pre-commit-config.yaml, .fastforge.json, ruff lint, and pytest.",
+    )
 
     args = parser.parse_args()
 
@@ -1269,19 +1572,21 @@ def main():
             elif args.feature == "postgres":
                 _cmd_add_postgres()
             elif args.feature == "kafka":
-                _cmd_add_stub("kafka", "Kafka streaming")
+                _cmd_add_kafka()
             elif args.feature == "redis":
                 _cmd_add_stub("redis", "Redis cache")
             elif args.feature == "observability":
-                _cmd_add_stub("observability", "Observability stack")
+                _cmd_add_observability()
             elif args.feature == "auth":
                 _cmd_add_stub("auth", "Authentication")
         elif args.command == "deploy":
             _cmd_deploy(args.target)
+        elif args.command == "secure":
+            _cmd_secure(args.action)
+        elif args.command == "ci":
+            _cmd_ci(args.provider)
         elif args.command == "doctor":
             _cmd_doctor()
-        elif args.command == "infra":
-            _cmd_infra()
     except KeyboardInterrupt:
         console.print(f"\n[{STYLE_WARN}]Aborted.[/]")
         sys.exit(1)

@@ -48,3 +48,7 @@ include = ["fastforge*"]
 
 [tool.setuptools.package-data]
 fastforge = ["template/**/*", "template/**/.*", "infra_template/**/*", "infra_template/**/.*", "fragments/*.j2"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+norecursedirs = ["fastforge/template", "fastforge/infra_template", ".venv"]

@@ -311,7 +311,7 @@ codeclimate analyze
 
 ### Containerization
 
-- Multi-stage Dockerfile (slim base)
+- Slim Dockerfile (python-slim base)
 - Non-root user
 - Health check built-in
 {%- endif %}
@@ -369,44 +369,33 @@ It reads structured JSON logs from `/var/log/app/*.log` and forwards them to **{
 #### Getting started
 
 ```bash
-# 1. Configure your {{ cookiecutter.log_target }} connection in .env.staging
-{%- if cookiecutter.log_target == "kafka" %}
-#    KAFKA_BOOTSTRAP_SERVERS=your-kafka:9092    (default: kafka:9092)
-{%- elif cookiecutter.log_target == "elasticsearch" %}
-#    ELASTICSEARCH_URL=http://your-elasticsearch:9200    (default: http://elasticsearch:9200)
-{%- elif cookiecutter.log_target == "opensearch" %}
-#    OPENSEARCH_URL=http://your-opensearch:9200    (default: http://opensearch:9200)
-{%- elif cookiecutter.log_target == "loki" %}
-#    LOKI_URL=http://your-loki:3100    (default: http://loki:3100)
-{%- elif cookiecutter.log_target == "http" %}
-#    LOG_HTTP_ENDPOINT=https://your-endpoint.example.com/logs
-{%- endif %}
-
-# 2. Start the app + {{ cookiecutter.log_agent }} sidecar
+# 1. Start the app + {{ cookiecutter.log_agent }} sidecar
 docker compose -f infra/docker-compose.yml up --build -d
 
-# 3. Verify the app is running
+# 2. Verify the app is running
 curl http://localhost:{{ cookiecutter.port }}/health
 
-# 4. Make some API calls to generate logs
+# 3. Make some API calls to generate logs
 curl http://localhost:{{ cookiecutter.port }}/api/v1/{{ cookiecutter.model_name_plural }}
 curl -X POST http://localhost:{{ cookiecutter.port }}/api/v1/{{ cookiecutter.model_name_plural }} \
   -H "Content-Type: application/json" \
   -d '{"name": "test"}'
 
-# 5. Check logs are being written to file
+# 4. Check logs are being written to file
 docker exec {{ cookiecutter.project_slug }}-dev cat /var/log/app/app.log
 
-# 6. Check {{ cookiecutter.log_agent }} is forwarding
+# 5. Check {{ cookiecutter.log_agent }} is forwarding
 docker logs {{ cookiecutter.project_slug }}-{{ cookiecutter.log_agent }}
 ```
 
-Config files:
+#### Configuration
+
+The {{ cookiecutter.log_agent }} sidecar forwards logs to **{{ cookiecutter.log_target }}**. Edit the connection settings in:
 {%- if cookiecutter.log_agent == "vector" %}
-- `infra/vector/vector.toml` — Vector pipeline config
+- `infra/vector/vector.toml` — Vector pipeline config (sink section)
 {%- endif %}
 {%- if cookiecutter.log_agent == "fluentbit" %}
-- `infra/fluentbit/fluent-bit.conf` — Fluent Bit pipeline config
+- `infra/fluentbit/fluent-bit.conf` — Fluent Bit pipeline config (OUTPUT section)
 - `infra/fluentbit/parsers.conf` — JSON log parser
 {%- endif %}
 
@@ -524,15 +513,54 @@ sidecar config, or add manually to `infra/docker-compose.yml`.
 
 ## Extend Your Project
 
+### Application
+
 ```bash
-fastforge-infra           # Infrastructure (Kafka, ES, Vault, DB)
-fastforge-cicd            # CI/CD pipeline
-fastforge-secops          # Security tools
-fastforge-helm            # Helm chart
-fastforge-k8s             # Kubernetes manifests
-fastforge-swarm           # Docker Swarm stack
-fastforge-observability   # Tracing + Metrics
+fastforge add model         # Add a new CRUD model (route, service, repo, tests)
+fastforge add postgres      # Add PostgreSQL + infra/docker-compose.postgres.yml
+fastforge add kafka         # Add Kafka streaming + infra/docker-compose.kafka.yml
+fastforge add observability # Add tracing + metrics (Jaeger / ELK / Grafana stack)
 ```
+
+### Deployment
+
+```bash
+fastforge deploy local      # Build and run with docker compose (auto-detects all infra)
+fastforge deploy compose    # Generate production Docker Compose manifest
+fastforge deploy swarm      # Generate Docker Swarm stack
+fastforge deploy k8s        # Generate Kubernetes manifests
+fastforge deploy helm       # Generate Helm chart
+fastforge deploy marathon   # Generate Marathon app definition
+```
+
+### Security
+
+```bash
+fastforge secure setup      # Add gitleaks + trivy configs
+fastforge secure scan       # Scan Docker image with Trivy
+fastforge secure sbom       # Generate CycloneDX SBOM
+fastforge secure license    # Check dependency license compliance
+fastforge secure audit      # Audit dependencies for vulnerabilities
+fastforge secure owasp      # Run OWASP ZAP baseline scan
+```
+
+### CI/CD
+
+```bash
+fastforge ci github         # Generate GitHub Actions pipeline
+fastforge ci gitlab         # Generate GitLab CI pipeline
+fastforge ci bitbucket      # Generate Bitbucket Pipelines
+fastforge ci jenkins        # Generate Jenkinsfile
+fastforge ci local          # Run CI pipeline locally
+```
+
+### Operations
+
+```bash
+fastforge doctor            # Check project health (8 checks)
+```
+
+Run `fastforge --help` for all available commands.
 
 ---
 

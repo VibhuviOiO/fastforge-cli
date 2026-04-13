@@ -93,7 +93,7 @@ That's it. Answer a few prompts and you get a running application.
 | **SOLID Architecture** | Repository pattern + Service layer + Dependency Injection |
 | **Async CRUD API** | FastAPI with full Create/Read/Update/Delete |
 | **Structured Logging** | structlog with JSON output, request IDs, duration tracking |
-| **Docker** | Multi-stage Dockerfile, docker-compose, health checks |
+| **Docker** | Slim Dockerfile, docker-compose, health checks |
 | **Debug Docker** | `docker-compose.debug.yml` at project root — no venv needed, auto-reload, debugpy on port 5678 |
 | **Security** | Security headers middleware, CORS, non-root container |
 | **Testing** | pytest + pytest-asyncio, 80%+ coverage out of the box |
@@ -202,12 +202,35 @@ When you select a log agent (Vector or Fluent Bit), FastForge asks where to send
 ## Extend Your Project
 
 ```bash
-fastforge-infra           # Infrastructure (Kafka, ES, Vault, DB)
-fastforge-cicd            # CI/CD pipeline
-fastforge-secops          # Security tools
-fastforge-helm            # Helm chart
-fastforge-k8s             # Kubernetes manifests
-fastforge-observability   # Tracing + Metrics
+# Add features
+fastforge add model         # CRUD model (route, service, repo, tests)
+fastforge add postgres      # PostgreSQL database support
+fastforge add observability # OpenTelemetry tracing + Prometheus metrics
+
+# Deploy
+fastforge deploy local      # Build and run with docker compose
+fastforge deploy compose    # Production Docker Compose manifest
+fastforge deploy swarm      # Docker Swarm stack
+fastforge deploy k8s        # Kubernetes manifests
+fastforge deploy helm       # Helm chart
+fastforge deploy marathon   # Marathon app definition
+
+# Security
+fastforge secure setup      # Gitleaks + Trivy configs
+fastforge secure scan       # Trivy image scan
+fastforge secure sbom       # CycloneDX SBOM
+fastforge secure license    # License compliance check
+fastforge secure audit      # Dependency vulnerability audit
+
+# CI/CD
+fastforge ci github         # GitHub Actions pipeline
+fastforge ci gitlab         # GitLab CI pipeline
+fastforge ci bitbucket      # Bitbucket Pipelines
+fastforge ci jenkins        # Jenkinsfile
+
+# Operations
+fastforge infra             # Standalone infrastructure stack
+fastforge doctor            # Project health check (8 checks)
 ```
 
 ## Requirements

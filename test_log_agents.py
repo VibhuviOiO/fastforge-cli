@@ -109,7 +109,7 @@ def test_full_app():
             "logging": "structlog", "log_format": "json", "log_connector": "file",
             "tracing": "opentelemetry", "tracing_backend": "jaeger",
             "metrics": "prometheus",
-            "streaming": "producer",
+            "streaming": "kafka",
             "database": "postgres",
             "secrets": "vault", "vault_auth": "both",
             "docker": "yes", "docker_debug": "yes",
@@ -117,10 +117,9 @@ def test_full_app():
             "ci": "github_actions", "ci_security_scan": "yes",
         }, td)
         assert not os.path.exists(os.path.join(p, "infrastructure"))
-        assert os.path.exists(os.path.join(p, "app", "vault.py"))
+        assert os.path.exists(os.path.join(p, "app", "secrets.py"))
         assert os.path.exists(os.path.join(p, "app", "streaming"))
         assert os.path.exists(os.path.join(p, "app", "db"))
-        assert os.path.exists(os.path.join(p, "deploy", "kubernetes"))
         assert os.path.exists(os.path.join(p, "Dockerfile"))
         assert os.path.exists(os.path.join(p, "app", "middleware", "security_headers.py"))
         assert os.path.exists(os.path.join(p, "app", "api", "exception_handlers.py"))

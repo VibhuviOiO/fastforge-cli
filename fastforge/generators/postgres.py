@@ -31,8 +31,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 DB_INIT = '"""Database package."""\n'
 
-COMPOSE_POSTGRES = """\
+COMPOSE_POSTGRES_YML = """\
+# PostgreSQL for local development
+# Usage: docker compose -f infra/docker-compose.yml -f infra/docker-compose.postgres.yml up -d
 
+services:
   postgres:
     image: postgres:16-alpine
     container_name: {slug}-db
@@ -44,6 +47,27 @@ COMPOSE_POSTGRES = """\
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    name: {slug}-pgdata
+"""
+
+INIT_SQL = """\
+-- Init script for {package} database
+-- This file runs automatically on first container start
+
+-- Create extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Grant permissions
+GRANT ALL PRIVILEGES ON DATABASE {package} TO postgres;
 """
 
 
@@ -112,32 +136,24 @@ def add_postgres(project_dir: str) -> dict:
                 f.write(f"\n# PostgreSQL\nDATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/{package}\n")
             modified.append(".env.staging")
 
-    # 4. Add postgres service to infra/docker-compose.yml
-    compose_path = os.path.join(project_dir, "infra", "docker-compose.yml")
-    if os.path.isfile(compose_path):
-        with open(compose_path) as f:
-            compose_content = f.read()
+    # 4. Generate infra/docker-compose.postgres.yml + infra/postgres/init.sql
+    infra_dir = os.path.join(project_dir, "infra")
+    os.makedirs(infra_dir, exist_ok=True)
 
-        if "postgres:" not in compose_content:
-            service_block = COMPOSE_POSTGRES.format(slug=slug, package=package)
+    compose_path = os.path.join(infra_dir, "docker-compose.postgres.yml")
+    if not os.path.exists(compose_path):
+        with open(compose_path, "w") as f:
+            f.write(COMPOSE_POSTGRES_YML.format(slug=slug, package=package))
+        created.append("infra/docker-compose.postgres.yml")
 
-            if "\nvolumes:" in compose_content:
-                # Add service before volumes section, and add pgdata volume
-                compose_content = compose_content.replace(
-                    "\nvolumes:", service_block + "\nvolumes:\n  pgdata:", 1
-                )
-            elif "volumes:" in compose_content:
-                # volumes: at start of line
-                compose_content = compose_content.replace(
-                    "volumes:", service_block + "volumes:\n  pgdata:", 1
-                )
-            else:
-                # No volumes section — append service + volumes
-                compose_content = compose_content.rstrip() + service_block + "\nvolumes:\n  pgdata:\n"
+    pg_dir = os.path.join(infra_dir, "postgres")
+    os.makedirs(pg_dir, exist_ok=True)
 
-            with open(compose_path, "w") as f:
-                f.write(compose_content)
-            modified.append("infra/docker-compose.yml")
+    init_path = os.path.join(pg_dir, "init.sql")
+    if not os.path.exists(init_path):
+        with open(init_path, "w") as f:
+            f.write(INIT_SQL.format(package=package))
+        created.append("infra/postgres/init.sql")
 
     # 5. Add dependencies to pyproject.toml
     pyproject_path = os.path.join(project_dir, "pyproject.toml")
