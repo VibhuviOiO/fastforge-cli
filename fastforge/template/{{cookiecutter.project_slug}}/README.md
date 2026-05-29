@@ -58,7 +58,8 @@ Once running:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Health check |
+| `GET` | `/livez` | Liveness probe |
+| `GET` | `/readyz` | Readiness probe (pings deps) |
 | `GET` | `/api/v1/{{ cookiecutter.model_name_plural }}` | List {{ cookiecutter.model_name_plural }} |
 | `POST` | `/api/v1/{{ cookiecutter.model_name_plural }}` | Create {{ cookiecutter.model_name }} |
 | `GET` | `/api/v1/{{ cookiecutter.model_name_plural }}/{id}` | Get {{ cookiecutter.model_name }} |
@@ -373,7 +374,7 @@ It reads structured JSON logs from `/var/log/app/*.log` and forwards them to **{
 docker compose -f infra/docker-compose.yml up --build -d
 
 # 2. Verify the app is running
-curl http://localhost:{{ cookiecutter.port }}/health
+curl http://localhost:{{ cookiecutter.port }}/livez
 
 # 3. Make some API calls to generate logs
 curl http://localhost:{{ cookiecutter.port }}/api/v1/{{ cookiecutter.model_name_plural }}

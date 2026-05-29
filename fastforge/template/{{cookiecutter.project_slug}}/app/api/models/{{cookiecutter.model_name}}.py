@@ -20,3 +20,5 @@ class {{ cookiecutter.model_name_class }}Response(BaseModel):
 class {{ cookiecutter.model_name_class }}ListResponse(BaseModel):
     {{ cookiecutter.model_name_plural }}: list[{{ cookiecutter.model_name_class }}Response]
     total: int
+    limit: int
+    offset: int

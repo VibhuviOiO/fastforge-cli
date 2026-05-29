@@ -1,7 +1,7 @@
 {%- if logging != "structlog" %}
 from logging import getLogger
 {% endif -%}
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.models.{{ name }} import (
     {{ Name }}Create,
@@ -34,9 +34,11 @@ async def create_{{ name }}(
 
 @router.get("/", response_model={{ Name }}ListResponse)
 async def list_{{ names }}(
+    limit: int = Query(50, ge=1, le=200, description="Page size (1-200)"),
+    offset: int = Query(0, ge=0, description="Items to skip"),
     service: {{ Name }}Service = Depends(get_{{ name }}_service),
 ) -> {{ Name }}ListResponse:
-    return await service.list_all()
+    return await service.list(limit=limit, offset=offset)
 
 
 @router.get("/{item_id}", response_model={{ Name }}Response)

@@ -40,7 +40,7 @@ services:
     volumes:
       - app-logs:/var/log/app
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{port}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{port}/livez"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -135,7 +135,7 @@ services:
           cpus: "0.25"
           memory: 128M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{port}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{port}/livez"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -455,7 +455,7 @@ kubectl logs -n {namespace} -l app={project_slug} -f
 
 # Port-forward for testing
 kubectl port-forward -n {namespace} svc/{project_slug} {port}:{port}
-curl http://localhost:{port}/health
+curl http://localhost:{port}/livez
 ```
 
 ## Scale
@@ -893,12 +893,13 @@ def deploy_compose(project_dir: str) -> dict:
     out = os.path.join(project_dir, "deploy", "compose")
     os.makedirs(out, exist_ok=True)
 
-    _write(os.path.join(out, "docker-compose.yml"),
-           COMPOSE_YML.format(project_slug=slug, port=port),
-           created, "deploy/compose")
-    _write(os.path.join(out, "README.md"),
-           COMPOSE_README,
-           created, "deploy/compose")
+    _write(
+        os.path.join(out, "docker-compose.yml"),
+        COMPOSE_YML.format(project_slug=slug, port=port),
+        created,
+        "deploy/compose",
+    )
+    _write(os.path.join(out, "README.md"), COMPOSE_README, created, "deploy/compose")
 
     config.setdefault("deploy", []).append("compose")
     save_config(config, project_dir)
@@ -919,12 +920,18 @@ def deploy_swarm(project_dir: str) -> dict:
     out = os.path.join(project_dir, "deploy", "swarm")
     os.makedirs(out, exist_ok=True)
 
-    _write(os.path.join(out, "docker-stack.yml"),
-           SWARM_STACK_YML.format(project_slug=slug, port=port),
-           created, "deploy/swarm")
-    _write(os.path.join(out, "README.md"),
-           SWARM_README.format(project_slug=slug),
-           created, "deploy/swarm")
+    _write(
+        os.path.join(out, "docker-stack.yml"),
+        SWARM_STACK_YML.format(project_slug=slug, port=port),
+        created,
+        "deploy/swarm",
+    )
+    _write(
+        os.path.join(out, "README.md"),
+        SWARM_README.format(project_slug=slug),
+        created,
+        "deploy/swarm",
+    )
 
     config.setdefault("deploy", []).append("swarm")
     save_config(config, project_dir)
@@ -958,13 +965,9 @@ def deploy_k8s(project_dir: str) -> dict:
     ]
 
     for filename, template in manifests:
-        _write(os.path.join(out, filename),
-               template.format(**fmt),
-               created, "deploy/k8s")
+        _write(os.path.join(out, filename), template.format(**fmt), created, "deploy/k8s")
 
-    _write(os.path.join(out, "README.md"),
-           K8S_README.format(**fmt),
-           created, "deploy/k8s")
+    _write(os.path.join(out, "README.md"), K8S_README.format(**fmt), created, "deploy/k8s")
 
     config.setdefault("deploy", []).append("k8s")
     save_config(config, project_dir)
@@ -988,12 +991,18 @@ def deploy_helm(project_dir: str) -> dict:
     templates_dir = os.path.join(chart_dir, "templates")
     os.makedirs(templates_dir, exist_ok=True)
 
-    _write(os.path.join(chart_dir, "Chart.yaml"),
-           HELM_CHART_YAML.format(**fmt),
-           created, f"deploy/helm/{slug}")
-    _write(os.path.join(chart_dir, "values.yaml"),
-           HELM_VALUES_YAML.format(**fmt),
-           created, f"deploy/helm/{slug}")
+    _write(
+        os.path.join(chart_dir, "Chart.yaml"),
+        HELM_CHART_YAML.format(**fmt),
+        created,
+        f"deploy/helm/{slug}",
+    )
+    _write(
+        os.path.join(chart_dir, "values.yaml"),
+        HELM_VALUES_YAML.format(**fmt),
+        created,
+        f"deploy/helm/{slug}",
+    )
 
     helm_templates = [
         ("deployment.yaml", HELM_DEPLOYMENT_TPL),
@@ -1004,13 +1013,19 @@ def deploy_helm(project_dir: str) -> dict:
     ]
 
     for filename, template in helm_templates:
-        _write(os.path.join(templates_dir, filename),
-               template.format(**fmt),
-               created, f"deploy/helm/{slug}/templates")
+        _write(
+            os.path.join(templates_dir, filename),
+            template.format(**fmt),
+            created,
+            f"deploy/helm/{slug}/templates",
+        )
 
-    _write(os.path.join(project_dir, "deploy", "helm", "README.md"),
-           HELM_README.format(**fmt),
-           created, "deploy/helm")
+    _write(
+        os.path.join(project_dir, "deploy", "helm", "README.md"),
+        HELM_README.format(**fmt),
+        created,
+        "deploy/helm",
+    )
 
     config.setdefault("deploy", []).append("helm")
     save_config(config, project_dir)
@@ -1031,13 +1046,19 @@ def deploy_marathon(project_dir: str) -> dict:
     out = os.path.join(project_dir, "deploy", "marathon")
     os.makedirs(out, exist_ok=True)
 
-    _write(os.path.join(out, "marathon-app.json"),
-           MARATHON_APP_JSON.replace("{project_slug}", slug).replace("{port}", str(port)),
-           created, "deploy/marathon")
+    _write(
+        os.path.join(out, "marathon-app.json"),
+        MARATHON_APP_JSON.replace("{project_slug}", slug).replace("{port}", str(port)),
+        created,
+        "deploy/marathon",
+    )
 
-    _write(os.path.join(out, "README.md"),
-           MARATHON_README.format(project_slug=slug),
-           created, "deploy/marathon")
+    _write(
+        os.path.join(out, "README.md"),
+        MARATHON_README.format(project_slug=slug),
+        created,
+        "deploy/marathon",
+    )
 
     config.setdefault("deploy", []).append("marathon")
     save_config(config, project_dir)

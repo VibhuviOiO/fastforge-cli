@@ -1,0 +1,21 @@
+{
+  "project_slug": "semantic-search",
+  "package_name": "semantic_search",
+  "description": "AI semantic search — LiteLLM + OpenAI embeddings + ChromaDB",
+  "model_name": "document",
+  "use_case": "semantic_search",
+  "kind": "standalone",
+  "database": "postgres",
+  "cache": "redis",
+  "streaming": "none",
+  "logging": "structlog",
+  "log_format": "json",
+  "log_connector": "stdout",
+  "docker": "yes",
+  "docker_debug": "no",
+  "precommit": "yes",
+  "ai_app_kind": "semantic_search",
+  "llm_gateway": "litellm",
+  "embeddings_provider": "openai",
+  "vector_store": "chromadb"
+}

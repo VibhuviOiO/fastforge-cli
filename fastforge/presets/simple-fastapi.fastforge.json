@@ -1,0 +1,16 @@
+{
+  "project_slug": "simple-fastapi",
+  "package_name": "simple_fastapi",
+  "description": "Plain CRUD API — no DB, no cache, just FastAPI + Docker",
+  "use_case": "simple_fastapi",
+  "kind": "standalone",
+  "database": "none",
+  "cache": "none",
+  "streaming": "none",
+  "logging": "structlog",
+  "log_format": "json",
+  "log_connector": "stdout",
+  "docker": "yes",
+  "docker_debug": "no",
+  "precommit": "yes"
+}

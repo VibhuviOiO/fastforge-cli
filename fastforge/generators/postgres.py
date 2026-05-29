@@ -133,7 +133,9 @@ def add_postgres(project_dir: str) -> dict:
 
         if "DATABASE_URL" not in env_content.upper():
             with open(env_path, "a") as f:
-                f.write(f"\n# PostgreSQL\nDATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/{package}\n")
+                f.write(
+                    f"\n# PostgreSQL\nDATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/{package}\n"
+                )
             modified.append(".env.staging")
 
     # 4. Generate infra/docker-compose.postgres.yml + infra/postgres/init.sql
@@ -172,7 +174,9 @@ def add_postgres(project_dir: str) -> dict:
 
         if new_deps:
             # Find the closing ] of the dependencies list (at start of line)
-            match = re.search(r"(dependencies\s*=\s*\[)(.*?)(^\])", pyproject_content, re.DOTALL | re.MULTILINE)
+            match = re.search(
+                r"(dependencies\s*=\s*\[)(.*?)(^\])", pyproject_content, re.DOTALL | re.MULTILINE
+            )
             if match:
                 existing = match.group(2).rstrip()
                 # Ensure trailing comma on last existing dep
@@ -180,9 +184,9 @@ def add_postgres(project_dir: str) -> dict:
                     existing = existing.rstrip() + ","
                 new_section = existing + "\n" + "\n".join(f"    {d}," for d in new_deps) + "\n"
                 pyproject_content = (
-                    pyproject_content[:match.start(2)]
+                    pyproject_content[: match.start(2)]
                     + new_section
-                    + pyproject_content[match.start(3):]
+                    + pyproject_content[match.start(3) :]
                 )
 
                 with open(pyproject_path, "w") as f:
@@ -190,13 +194,17 @@ def add_postgres(project_dir: str) -> dict:
                 modified.append("pyproject.toml")
 
     # 6. Run ruff
-    subprocess.run(["ruff", "check", "--fix", "--silent", "."], cwd=project_dir, capture_output=True)
+    subprocess.run(
+        ["ruff", "check", "--fix", "--silent", "."], cwd=project_dir, capture_output=True
+    )
     subprocess.run(["ruff", "format", "--silent", "."], cwd=project_dir, capture_output=True)
 
     # 7. Update detect-secrets baseline
     baseline_path = os.path.join(project_dir, ".secrets.baseline")
     if os.path.isfile(baseline_path):
-        result = subprocess.run(["detect-secrets", "scan"], cwd=project_dir, capture_output=True, text=True)
+        result = subprocess.run(
+            ["detect-secrets", "scan"], cwd=project_dir, capture_output=True, text=True
+        )
         if result.returncode == 0 and result.stdout:
             with open(baseline_path, "w") as f:
                 f.write(result.stdout)

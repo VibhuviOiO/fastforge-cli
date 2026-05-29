@@ -8,11 +8,11 @@ import os
 import re
 import shutil
 import subprocess
-
-from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 
-from fastforge.project_config import load_config, save_config, find_project_root
+from jinja2 import Environment, FileSystemLoader
+
+from fastforge.project_config import find_project_root, load_config, save_config
 
 FRAGMENTS_DIR = str(Path(__file__).parent.parent / "fragments")
 
@@ -147,9 +147,7 @@ def add_model(
 
         # Add imports
         repo_import = (
-            f"from app.repositories.{name}_repository import (\n"
-            f"    InMemory{Name}Repository,\n"
-            f")"
+            f"from app.repositories.{name}_repository import (\n    InMemory{Name}Repository,\n)"
         )
         service_import = f"from app.services.{name}_service import {Name}Service"
 
@@ -186,21 +184,26 @@ def add_model(
         modified.append("app/dependencies.py")
 
     # ── Run ruff to auto-fix formatting ──────────────────────────────────────
-    subprocess.run(
-        ["ruff", "check", "--fix", "--silent", "."],
-        cwd=project_dir, capture_output=True,
-    )
-    subprocess.run(
-        ["ruff", "format", "--silent", "."],
-        cwd=project_dir, capture_output=True,
-    )
+    if shutil.which("ruff"):
+        subprocess.run(
+            ["ruff", "check", "--fix", "--silent", "."],
+            cwd=project_dir,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["ruff", "format", "--silent", "."],
+            cwd=project_dir,
+            capture_output=True,
+        )
 
     # ── Update detect-secrets baseline if it exists ──────────────────────────
     baseline_path = os.path.join(project_dir, ".secrets.baseline")
-    if os.path.isfile(baseline_path):
+    if os.path.isfile(baseline_path) and shutil.which("detect-secrets"):
         result = subprocess.run(
             ["detect-secrets", "scan"],
-            cwd=project_dir, capture_output=True, text=True,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
         )
         if result.returncode == 0 and result.stdout:
             with open(baseline_path, "w") as f:

@@ -245,7 +245,9 @@ def add_kafka(project_dir: str) -> dict:
         # Add imports
         imports_to_add = []
         if "from app.streaming.consumer import start_consumer" not in main_content:
-            imports_to_add.append("from app.streaming.consumer import start_consumer, stop_consumer")
+            imports_to_add.append(
+                "from app.streaming.consumer import start_consumer, stop_consumer"
+            )
         if "from app.streaming.producer import close_producer" not in main_content:
             imports_to_add.append("from app.streaming.producer import close_producer")
 
@@ -325,10 +327,14 @@ def add_kafka(project_dir: str) -> dict:
         with open(pyproject_path) as f:
             pyproject_content = f.read()
 
-        new_deps = [d for d in KAFKA_DEPS if d.split('"')[1].split('>')[0] not in pyproject_content.lower()]
+        new_deps = [
+            d for d in KAFKA_DEPS if d.split('"')[1].split(">")[0] not in pyproject_content.lower()
+        ]
 
         if new_deps:
-            match = re.search(r"(dependencies\s*=\s*\[)(.*?)(^\])", pyproject_content, re.DOTALL | re.MULTILINE)
+            match = re.search(
+                r"(dependencies\s*=\s*\[)(.*?)(^\])", pyproject_content, re.DOTALL | re.MULTILINE
+            )
             if match:
                 existing = match.group(2).rstrip()
                 if existing and not existing.rstrip().endswith(","):
@@ -354,7 +360,9 @@ def add_kafka(project_dir: str) -> dict:
         created.append("infra/docker-compose.kafka.yml")
 
     # 7. Run ruff
-    subprocess.run(["ruff", "check", "--fix", "--silent", "."], cwd=project_dir, capture_output=True)
+    subprocess.run(
+        ["ruff", "check", "--fix", "--silent", "."], cwd=project_dir, capture_output=True
+    )
     subprocess.run(["ruff", "format", "--silent", "."], cwd=project_dir, capture_output=True)
 
     # 8. Update .fastforge.json

@@ -25,6 +25,6 @@ USER appuser
 EXPOSE {{cookiecutter.port}}
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:{{cookiecutter.port}}/health || exit 1
+    CMD curl -f http://localhost:{{cookiecutter.port}}/livez || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "{{cookiecutter.port}}", "--log-level", "info"]

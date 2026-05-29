@@ -160,7 +160,7 @@ def secure_sbom(project_dir: str) -> int:
     )
 
     if result.returncode == 0:
-        print(f"\n✔ SBOM written to sbom.json")
+        print("\n✔ SBOM written to sbom.json")
     return result.returncode
 
 
@@ -249,22 +249,28 @@ def secure_owasp(project_dir: str, target_url: str | None = None) -> int:
 
     result = subprocess.run(
         [
-            "docker", "run", "--rm",
+            "docker",
+            "run",
+            "--rm",
             "--add-host=host.docker.internal:host-gateway",
-            "-v", f"{report_dir}:/zap/wrk:rw",
+            "-v",
+            f"{report_dir}:/zap/wrk:rw",
             "ghcr.io/zaproxy/zaproxy:stable",
             "zap-baseline.py",
-            "-t", target_url,
-            "-r", "owasp-report.html",
-            "-J", "owasp-report.json",
+            "-t",
+            target_url,
+            "-r",
+            "owasp-report.html",
+            "-J",
+            "owasp-report.json",
             "-I",  # Don't fail on warnings, only on failures
         ],
         cwd=project_dir,
     )
 
     if result.returncode <= 1:
-        print(f"\n✔ OWASP ZAP report written to reports/owasp-report.html")
+        print("\n✔ OWASP ZAP report written to reports/owasp-report.html")
     else:
-        print(f"\n✘ OWASP ZAP found issues. See reports/owasp-report.html")
+        print("\n✘ OWASP ZAP found issues. See reports/owasp-report.html")
 
     return result.returncode

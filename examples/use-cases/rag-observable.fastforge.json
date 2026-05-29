@@ -1,0 +1,26 @@
+{
+  "project_slug": "rag-observable",
+  "package_name": "rag_observable",
+  "description": "RAG app with OpenTelemetry + AI telemetry (token cost + tenant attribution)",
+  "model_name": "document",
+  "use_case": "rag_observable",
+  "kind": "standalone",
+  "database": "postgres",
+  "cache": "redis",
+  "streaming": "none",
+  "logging": "structlog",
+  "log_format": "json",
+  "log_connector": "stdout",
+  "docker": "yes",
+  "docker_debug": "no",
+  "precommit": "yes",
+  "observability": "enabled",
+  "ai_app_kind": "rag",
+  "llm_gateway": "litellm",
+  "embeddings_provider": "openai",
+  "vector_store": "chromadb",
+  "ai_telemetry": {
+    "version": "1.0.0",
+    "tenant_header": "X-Tenant-Id"
+  }
+}

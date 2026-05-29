@@ -20,3 +20,5 @@ class {{ Name }}Response(BaseModel):
 class {{ Name }}ListResponse(BaseModel):
     {{ names }}: list[{{ Name }}Response]
     total: int
+    limit: int
+    offset: int

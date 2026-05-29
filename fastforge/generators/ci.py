@@ -553,7 +553,6 @@ def ci_local(project_dir: str) -> int:
     """
     import shutil
     import subprocess
-    import sys
 
     config = load_config(project_dir)
     slug = config.get("project_slug", "app")
@@ -572,15 +571,20 @@ def ci_local(project_dir: str) -> int:
     if os.path.isfile(os.path.join(project_dir, "Dockerfile")) and shutil.which("docker"):
         steps.append(("Docker build", ["docker", "build", "-t", f"{slug}:local", "."]))
         if shutil.which("trivy"):
-            steps.append(("Trivy image scan", ["trivy", "image", "--severity", "CRITICAL,HIGH", f"{slug}:local"]))
+            steps.append(
+                (
+                    "Trivy image scan",
+                    ["trivy", "image", "--severity", "CRITICAL,HIGH", f"{slug}:local"],
+                )
+            )
 
     passed = 0
     failed = 0
 
     for name, cmd in steps:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  {name}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
         result = subprocess.run(cmd, cwd=project_dir)
 
@@ -591,8 +595,8 @@ def ci_local(project_dir: str) -> int:
             print(f"\n  ✘ {name} — FAILED")
             failed += 1
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Results: {passed} passed, {failed} failed")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     return 1 if failed > 0 else 0

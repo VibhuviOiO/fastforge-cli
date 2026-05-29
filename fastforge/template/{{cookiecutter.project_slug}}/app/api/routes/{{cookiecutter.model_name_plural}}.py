@@ -1,7 +1,7 @@
 {%- if cookiecutter.logging != "structlog" %}
 from logging import getLogger
 {% endif -%}
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.models.{{cookiecutter.model_name}} import (
     {{cookiecutter.model_name_class}}Create,
@@ -33,9 +33,11 @@ async def create_{{cookiecutter.model_name}}(
 
 @router.get("/", response_model={{cookiecutter.model_name_class}}ListResponse)
 async def list_{{cookiecutter.model_name_plural}}(
+    limit: int = Query(50, ge=1, le=200, description="Page size (1-200)"),
+    offset: int = Query(0, ge=0, description="Items to skip"),
     service: {{cookiecutter.model_name_class}}Service = Depends(get_{{cookiecutter.model_name}}_service),
 ) -> {{cookiecutter.model_name_class}}ListResponse:
-    return await service.list_all()
+    return await service.list(limit=limit, offset=offset)
 
 
 @router.get("/{item_id}", response_model={{cookiecutter.model_name_class}}Response)

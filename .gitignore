@@ -39,3 +39,8 @@ Thumbs.db
 
 # Generated projects (testing output)
 /test-output/
+
+# Local scaffold outputs from fastforge new
+/searchapi/
+/packages/searchapi/
+/promo/

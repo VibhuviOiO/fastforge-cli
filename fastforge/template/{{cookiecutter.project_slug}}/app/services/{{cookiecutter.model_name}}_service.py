@@ -38,8 +38,15 @@ class {{cookiecutter.model_name_class}}Service:
         return await self._repo.get_by_id(item_id)
 
     async def list_all(self) -> {{cookiecutter.model_name_class}}ListResponse:
-        items = await self._repo.list_all()
-        return {{cookiecutter.model_name_class}}ListResponse({{cookiecutter.model_name_plural}}=items, total=len(items))
+        return await self.list(limit=50, offset=0)
+
+    async def list(
+        self, limit: int = 50, offset: int = 0
+    ) -> {{cookiecutter.model_name_class}}ListResponse:
+        items, total = await self._repo.list(limit=limit, offset=offset)
+        return {{cookiecutter.model_name_class}}ListResponse(
+            {{cookiecutter.model_name_plural}}=items, total=total, limit=limit, offset=offset
+        )
 
     async def update(self, item_id: str, data: {{cookiecutter.model_name_class}}Update) -> {{cookiecutter.model_name_class}}Response | None:
         result = await self._repo.update(item_id, data)

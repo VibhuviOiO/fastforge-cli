@@ -1,0 +1,22 @@
+{
+  "project_slug": "observable-api",
+  "package_name": "observable_api",
+  "description": "Postgres + Redis + Grafana stack (Prometheus, Loki, Tempo) — no AI",
+  "model_name": "item",
+  "use_case": "observable_api",
+  "kind": "standalone",
+  "database": "postgres",
+  "cache": "redis",
+  "streaming": "none",
+  "secrets": "none",
+  "logging": "structlog",
+  "log_format": "json",
+  "log_connector": "stdout",
+  "log_agent": "none",
+  "log_target": "none",
+  "quality_gate": "none",
+  "docker": "yes",
+  "docker_debug": "yes",
+  "precommit": "yes",
+  "observability": "enabled"
+}

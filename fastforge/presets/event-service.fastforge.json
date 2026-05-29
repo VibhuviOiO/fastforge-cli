@@ -1,0 +1,20 @@
+{
+  "project_slug": "event-service",
+  "package_name": "event_service",
+  "description": "Kafka + Postgres + Redis — event-driven service with persistence",
+  "model_name": "event",
+  "use_case": "event_service",
+  "kind": "standalone",
+  "database": "postgres",
+  "cache": "redis",
+  "streaming": "kafka",
+  "secrets": "vault",
+  "logging": "structlog",
+  "log_format": "json",
+  "log_connector": "file",
+  "log_agent": "vector",
+  "log_target": "elasticsearch",
+  "docker": "yes",
+  "docker_debug": "yes",
+  "precommit": "yes"
+}

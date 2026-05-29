@@ -424,19 +424,25 @@ def add_observability(project_dir: str, stack: str = "jaeger") -> dict:
         with open(pyproject_path) as f:
             pyproject_content = f.read()
 
-        new_deps = [d for d in OTEL_DEPS if d.split('"')[1].split('>')[0].split('[')[0] not in pyproject_content.lower()]
+        new_deps = [
+            d
+            for d in OTEL_DEPS
+            if d.split('"')[1].split(">")[0].split("[")[0] not in pyproject_content.lower()
+        ]
 
         if new_deps:
-            match = re.search(r"(dependencies\s*=\s*\[)(.*?)(^\])", pyproject_content, re.DOTALL | re.MULTILINE)
+            match = re.search(
+                r"(dependencies\s*=\s*\[)(.*?)(^\])", pyproject_content, re.DOTALL | re.MULTILINE
+            )
             if match:
                 existing = match.group(2).rstrip()
                 if existing and not existing.rstrip().endswith(","):
                     existing = existing.rstrip() + ","
                 new_section = existing + "\n" + "\n".join(f"    {d}," for d in new_deps) + "\n"
                 pyproject_content = (
-                    pyproject_content[:match.start(2)]
+                    pyproject_content[: match.start(2)]
                     + new_section
-                    + pyproject_content[match.start(3):]
+                    + pyproject_content[match.start(3) :]
                 )
                 with open(pyproject_path, "w") as f:
                     f.write(pyproject_content)
@@ -485,7 +491,9 @@ def add_observability(project_dir: str, stack: str = "jaeger") -> dict:
                 created.append(f"infra/grafana/{filename}")
 
     # 6. Run ruff
-    subprocess.run(["ruff", "check", "--fix", "--silent", "."], cwd=project_dir, capture_output=True)
+    subprocess.run(
+        ["ruff", "check", "--fix", "--silent", "."], cwd=project_dir, capture_output=True
+    )
     subprocess.run(["ruff", "format", "--silent", "."], cwd=project_dir, capture_output=True)
 
     # 8. Update .fastforge.json

@@ -20,7 +20,11 @@ class {{ Name }}Repository(ABC):
     async def get_by_id(self, item_id: str) -> {{ Name }}Response | None: ...
 
     @abstractmethod
-    async def list_all(self) -> list[{{ Name }}Response]: ...
+    async def list(
+        self, limit: int = 50, offset: int = 0
+    ) -> tuple[list[{{ Name }}Response], int]:
+        """Return ``(page_items, total_count)``."""
+        ...
 
     @abstractmethod
     async def update(self, item_id: str, data: {{ Name }}Update) -> {{ Name }}Response | None: ...
@@ -44,8 +48,11 @@ class InMemory{{ Name }}Repository({{ Name }}Repository):
     async def get_by_id(self, item_id: str) -> {{ Name }}Response | None:
         return self._store.get(item_id)
 
-    async def list_all(self) -> list[{{ Name }}Response]:
-        return list(self._store.values())
+    async def list(
+        self, limit: int = 50, offset: int = 0
+    ) -> tuple[list[{{ Name }}Response], int]:
+        items = list(self._store.values())
+        return items[offset : offset + limit], len(items)
 
     async def update(self, item_id: str, data: {{ Name }}Update) -> {{ Name }}Response | None:
         existing = self._store.get(item_id)

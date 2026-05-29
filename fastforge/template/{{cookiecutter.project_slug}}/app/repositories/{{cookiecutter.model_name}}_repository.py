@@ -20,7 +20,11 @@ class {{cookiecutter.model_name_class}}Repository(ABC):
     async def get_by_id(self, item_id: str) -> {{cookiecutter.model_name_class}}Response | None: ...
 
     @abstractmethod
-    async def list_all(self) -> list[{{cookiecutter.model_name_class}}Response]: ...
+    async def list(
+        self, limit: int = 50, offset: int = 0
+    ) -> tuple[list[{{cookiecutter.model_name_class}}Response], int]:
+        """Return ``(page_items, total_count)``."""
+        ...
 
     @abstractmethod
     async def update(self, item_id: str, data: {{cookiecutter.model_name_class}}Update) -> {{cookiecutter.model_name_class}}Response | None: ...
@@ -44,8 +48,11 @@ class InMemory{{cookiecutter.model_name_class}}Repository({{cookiecutter.model_n
     async def get_by_id(self, item_id: str) -> {{cookiecutter.model_name_class}}Response | None:
         return self._store.get(item_id)
 
-    async def list_all(self) -> list[{{cookiecutter.model_name_class}}Response]:
-        return list(self._store.values())
+    async def list(
+        self, limit: int = 50, offset: int = 0
+    ) -> tuple[list[{{cookiecutter.model_name_class}}Response], int]:
+        items = list(self._store.values())
+        return items[offset : offset + limit], len(items)
 
     async def update(self, item_id: str, data: {{cookiecutter.model_name_class}}Update) -> {{cookiecutter.model_name_class}}Response | None:
         existing = self._store.get(item_id)
@@ -86,16 +93,30 @@ class SQLAlchemy{{cookiecutter.model_name_class}}Repository({{cookiecutter.model
             return None
         return {{cookiecutter.model_name_class}}Response(id=str(obj.id), name=obj.name, description=obj.description)
 
-    async def list_all(self) -> list[{{cookiecutter.model_name_class}}Response]:
-        from sqlalchemy import select
+    async def list(
+        self, limit: int = 50, offset: int = 0
+    ) -> tuple[list[{{cookiecutter.model_name_class}}Response], int]:
+        from sqlalchemy import func, select
 
         from app.db.models.{{cookiecutter.model_name}} import {{cookiecutter.model_name_class}}Model
 
-        result = await self._session.execute(select({{cookiecutter.model_name_class}}Model))
-        return [
+        total_result = await self._session.execute(
+            select(func.count()).select_from({{cookiecutter.model_name_class}}Model)
+        )
+        total = int(total_result.scalar_one())
+
+        page_stmt = (
+            select({{cookiecutter.model_name_class}}Model)
+            .order_by({{cookiecutter.model_name_class}}Model.id)
+            .limit(limit)
+            .offset(offset)
+        )
+        page_result = await self._session.execute(page_stmt)
+        items = [
             {{cookiecutter.model_name_class}}Response(id=str(obj.id), name=obj.name, description=obj.description)
-            for obj in result.scalars()
+            for obj in page_result.scalars()
         ]
+        return items, total
 
     async def update(self, item_id: str, data: {{cookiecutter.model_name_class}}Update) -> {{cookiecutter.model_name_class}}Response | None:
         from sqlalchemy import select
@@ -146,11 +167,19 @@ class Mongo{{cookiecutter.model_name_class}}Repository({{cookiecutter.model_name
             return None
         return {{cookiecutter.model_name_class}}Response(id=doc["_id"], name=doc["name"], description=doc.get("description"))
 
-    async def list_all(self) -> list[{{cookiecutter.model_name_class}}Response]:
-        items = []
-        async for doc in self._collection.find():
-            items.append({{cookiecutter.model_name_class}}Response(id=doc["_id"], name=doc["name"], description=doc.get("description")))
-        return items
+    async def list(
+        self, limit: int = 50, offset: int = 0
+    ) -> tuple[list[{{cookiecutter.model_name_class}}Response], int]:
+        total = await self._collection.count_documents({})
+        cursor = self._collection.find().sort("_id", 1).skip(offset).limit(limit)
+        items: list[{{cookiecutter.model_name_class}}Response] = []
+        async for doc in cursor:
+            items.append(
+                {{cookiecutter.model_name_class}}Response(
+                    id=doc["_id"], name=doc["name"], description=doc.get("description")
+                )
+            )
+        return items, total
 
     async def update(self, item_id: str, data: {{cookiecutter.model_name_class}}Update) -> {{cookiecutter.model_name_class}}Response | None:
         updates = {k: v for k, v in data.model_dump().items() if v is not None}

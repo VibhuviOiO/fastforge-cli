@@ -1,0 +1,21 @@
+{
+  "project_slug": "postgres-api",
+  "package_name": "postgres_api",
+  "description": "Postgres + Redis + Vault — business API with debug Docker Compose",
+  "model_name": "order",
+  "use_case": "postgres_api",
+  "kind": "standalone",
+  "database": "postgres",
+  "cache": "redis",
+  "streaming": "none",
+  "secrets": "vault",
+  "logging": "structlog",
+  "log_format": "json",
+  "log_connector": "file",
+  "log_agent": "vector",
+  "log_target": "elasticsearch",
+  "quality_gate": "sonarqube",
+  "docker": "yes",
+  "docker_debug": "yes",
+  "precommit": "yes"
+}

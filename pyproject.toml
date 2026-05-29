@@ -1,6 +1,6 @@
 [project]
 name = "fastforge-cli"
-version = "0.0.2"
+version = "0.3.0"
 description = "Production-grade FastAPI project generator for Python backends"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -28,6 +28,16 @@ dependencies = [
     "rich>=13.0.0",
     "ruff>=0.8.0",
     "jinja2>=3.1.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.8.0",
+    "build>=1.2.0",
+    "twine>=5.0.0",
 ]
 
 [project.urls]
@@ -39,6 +49,12 @@ Documentation = "https://github.com/VibhuviOiO/fastforge-cli#readme"
 [project.scripts]
 fastforge = "fastforge.cli:main"
 
+[project.entry-points."fastforge.generators"]
+# Built-in generators registered as entry points for plugin discovery.
+# Third-party packages register their own under the same group.
+ai-app = "fastforge.generators.ai_app:AIAppGenerator"
+ai-telemetry = "fastforge.generators.ai_telemetry:AITelemetryGenerator"
+
 [build-system]
 requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
@@ -47,8 +63,43 @@ build-backend = "setuptools.build_meta"
 include = ["fastforge*"]
 
 [tool.setuptools.package-data]
-fastforge = ["template/**/*", "template/**/.*", "infra_template/**/*", "infra_template/**/.*", "fragments/*.j2"]
+fastforge = ["template/**/*", "template/**/.*", "infra_template/**/*", "infra_template/**/.*", "fragments/*.j2", "ai_templates/**/*.py", "presets/*.json", "presets/*.yaml", "presets/*.yml"]
 
 [tool.pytest.ini_options]
 testpaths = ["."]
 norecursedirs = ["fastforge/template", "fastforge/infra_template", ".venv"]
+markers = [
+    "e2e: end-to-end tests that generate projects and run their test suites",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    "fastforge/template",
+    "fastforge/infra_template",
+    "fastforge/fragments",
+    "fastforge/ai_templates",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["E501"]  # line length handled by formatter; long strings allowed
+
+[tool.coverage.run]
+source = ["fastforge"]
+omit = [
+    "fastforge/template/*",
+    "fastforge/infra_template/*",
+    "fastforge/fragments/*",
+    "fastforge/ai_templates/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+

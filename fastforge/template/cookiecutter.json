@@ -7,6 +7,9 @@
   "author_email": "you@example.com",
   "python_version": "3.11",
   "port": "8000",
+  "kind": "standalone",
+  "use_case": "custom",
+  "fastforge_version": "0.1.0",
 
   "model_name": "item",
   "model_name_class": "Item",

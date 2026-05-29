@@ -15,7 +15,7 @@ services:
 {%- endif %}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "{{ cookiecutter.port }}", "--reload", "--log-level", "debug"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{{ cookiecutter.port }}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{{ cookiecutter.port }}/livez"]
       interval: 15s
       timeout: 5s
       retries: 3

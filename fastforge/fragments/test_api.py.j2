@@ -13,7 +13,10 @@ class Test{{ Name }}API:
     async def test_list_{{ names }}(self, client: AsyncClient):
         response = await client.get("/api/v1/{{ names }}/")
         assert response.status_code == 200
-        assert "{{ names }}" in response.json()
+        body = response.json()
+        assert "{{ names }}" in body
+        assert body["limit"] == 50
+        assert body["offset"] == 0
 
     async def test_get_{{ name }}_not_found(self, client: AsyncClient):
         response = await client.get("/api/v1/{{ names }}/nonexistent")
